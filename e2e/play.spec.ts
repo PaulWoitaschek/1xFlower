@@ -117,3 +117,51 @@ test("the third bloom brings a gift", async ({ page }) => {
   await expect(page.locator('#yard [title="Gießkanne"]')).toBeVisible();
   await expect(page.locator("#gifts .got")).toHaveCount(1);
 });
+
+test("a new garden starts with seeds only and shows no legend", async ({
+  page,
+}) => {
+  await newProfile(page);
+
+  await expect(page.locator("#grid .cell")).toHaveCount(100);
+  await expect(page.locator("#grid .cell.u")).toHaveCount(100);
+  await expect(page.locator("#life .guest")).toHaveCount(0);
+  await expect(page.locator("#legend")).toHaveCount(0);
+  await expect(page.locator("#garden")).not.toContainText("welkt");
+});
+
+test("the blooms next to a new bloom greet it and a new bee comes", async ({
+  page,
+}) => {
+  const bloom = { lvl: 4, seen: 4, right: 4, wrong: 0, wilt: false };
+  const bud = { ...bloom, lvl: 3, seen: 3, right: 3 };
+  const facts: Record<string, typeof bloom> = {};
+  for (let b = 1; b <= 10; b++) {
+    facts[`4x${b}`] = bloom;
+    facts[`5x${b}`] = bud;
+    facts[`6x${b}`] = bloom;
+  }
+  const store = {
+    v: 2,
+    sound: false,
+    haptic: false,
+    active: "a",
+    profiles: [{ id: "a", name: "Lena", flower: 3 }],
+    data: {
+      a: { facts, points: 0, best: 0, rows: [5], deco: [], critters: [] },
+    },
+  };
+  await page.addInitScript((saved) => {
+    localStorage.setItem("einmaleins-garten-v2", saved);
+  }, JSON.stringify(store));
+  await page.goto("/");
+  await expect(page.locator("#life .guest.bee")).toHaveCount(4);
+
+  const { a, b } = await answer(page);
+
+  await expect(gardenPlant(page, a, b)).toHaveClass(/bloomed/);
+  await expect(gardenPlant(page, a - 1, b)).toHaveClass(/hello/);
+  await expect(gardenPlant(page, a + 1, b)).toHaveClass(/hello/);
+  await expect(page.locator("#life .guest.bee")).toHaveCount(5);
+  await expect(page.locator(".flyer").first()).toBeAttached();
+});

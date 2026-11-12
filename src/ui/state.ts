@@ -39,6 +39,8 @@ interface Session extends Play {
   phase: "ask" | "fix" | "ok";
   t0: number;
   bloom: string | null;
+  /** the blooms next to the new bloom, they greet it */
+  friends: string[];
   moment: Moment | null;
   newTree: number | null;
   newDeco: string | null;
@@ -57,6 +59,7 @@ export const sess: Session = {
   phase: "ask",
   t0: 0,
   bloom: null,
+  friends: [],
   moment: null,
   newTree: null,
   newDeco: null,

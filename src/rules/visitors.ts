@@ -8,7 +8,7 @@ import {
 } from "./garden";
 
 const KINDS: CritterKind[] = ["bfly", "bee", "bfly", "bug"];
-const BUTTERFLY_COLORS = [
+export const BUTTERFLY_COLORS = [
   "#7FC8F8",
   "#FF9EC4",
   "#FFC93C",

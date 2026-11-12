@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
-/* Layout: play area (task + numpad) left, the 10x10 garden of facts right; stacks on phones. */
+/* Layout: play area (task + numpad) left, the 10x10 garden of facts right. On phones the garden stacks below, so a small map of it sits next to the task. */
 :root{
   --bg:#EEF4E8; --card:#FFFFFF; --ink:#1E2A1B; --muted:#5E6E58;
   --plot:#E3DACB; --soil:#8A6A48; --sprout:#B5DB8E; --leaf:#3E9B4F; --leaf-ink:#FFFFFF;
@@ -44,7 +44,6 @@ h1 span{color:var(--leaf)}
 .mult[hidden]{display:none!important}
 
 .main{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:840px){.main{grid-template-columns:minmax(0,1fr)}}
 
 .play{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .progress{display:grid;grid-template-columns:repeat(20,1fr);gap:4px}
@@ -68,10 +67,11 @@ h1 span{color:var(--leaf)}
 @keyframes pop{50%{transform:scale(1.12)}}
 
 .feedback{min-height:3.4em;text-align:center;font-weight:700;font-size:1.05rem;display:flex;flex-direction:column;justify-content:center;gap:2px}
-.feedback .big{font-family:var(--display);font-size:1.6rem;font-weight:600}
+.feedback .big{font-family:var(--display);font-size:1.6rem;font-weight:600;line-height:1.2}
 .feedback.good{color:var(--leaf)}
 .feedback.bad{color:var(--berry)}
 .feedback .sub{color:var(--muted);font-weight:600;font-size:.95rem}
+.feedback .sub svg{width:auto;vertical-align:middle;margin-right:8px}
 
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:360px;width:100%;margin:0 auto}
 .pad button{font-family:var(--display);font-size:1.8rem;font-weight:600;height:64px;border-radius:18px;
@@ -84,7 +84,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 
 .garden{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .garden h2{font-family:var(--display);font-weight:600;font-size:1.3rem;margin:0}
-.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ghead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .gcount{margin:-8px 0 0;color:var(--muted);font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums}
 .bed{background:linear-gradient(180deg,color-mix(in srgb,var(--bed) 70%,var(--card)),var(--bed));border-radius:20px;padding:10px 8px 8px}
 .grid{display:grid;grid-template-columns:18px repeat(10,minmax(0,1fr)) minmax(0,1.25fr);gap:0 2px}
@@ -120,7 +120,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .flyer .wl,.flyer .wr{animation:flap2 .22s linear infinite alternate}
 @keyframes flap2{to{transform:scaleX(.25)}}
 
-/* decorations bought in the shop */
+/* decorations from the gifts */
 .yard{position:relative;height:90px;margin:8px -8px -8px;padding:0 10px 6px;border-radius:0 0 20px 20px;overflow:hidden;
   background:linear-gradient(180deg,transparent 62%,color-mix(in srgb,var(--stem) 30%,var(--bed)) 62%)}
 .yard .fence{position:absolute;left:0;right:0;bottom:8px;width:100%;height:30px}
@@ -130,21 +130,13 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .yard-items .new{animation:treepop 1s cubic-bezier(.34,1.56,.64,1);transform-origin:50% 100%}
 .yard p{position:absolute;inset:0 0 auto;margin:10px 0 0;text-align:center;font-size:.82rem;font-weight:700;color:var(--muted)}
 
-.gbtn{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:1rem;padding:6px 14px;border-radius:999px;
-  border:1px solid var(--sun);background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink);cursor:pointer}
-.gbtn.can::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--berry)}
-.shop{max-width:560px}
-.shop .sub{margin-top:-6px}
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;max-height:58vh;overflow-y:auto;padding:2px}
-.item{border:1px solid var(--line);background:var(--key);border-radius:18px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.item .pv{height:58px;width:100%;display:flex;align-items:flex-end;justify-content:center}
-.item .pv svg{height:auto;max-height:100%;width:auto;max-width:100%}
-.item b{font-family:var(--display);font-weight:600;font-size:1.05rem}
-.item .price{color:var(--muted);font-weight:800;font-size:.85rem}
-.item button{margin-top:4px;width:100%;font-family:var(--body);font-weight:800;font-size:.9rem;padding:8px 10px;border-radius:12px;cursor:pointer;
-  border:1px solid var(--leaf);background:var(--leaf);color:var(--leaf-ink)}
-.item button:disabled{cursor:default;background:var(--card);border-color:var(--line);color:var(--muted)}
-.item.owned{border-color:color-mix(in srgb,var(--leaf) 50%,var(--line))}
+/* gifts: every decoration arrives at a bloom count */
+.gifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.gift{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 6px;border-radius:14px;border:1px solid var(--line);background:var(--key);
+  font-size:.72rem;font-weight:800;color:var(--muted);white-space:nowrap}
+.gift svg{width:auto;max-width:100%}
+.gift:not(.got) svg{filter:grayscale(1);opacity:.4}
+.gift.got{border-color:color-mix(in srgb,var(--leaf) 50%,var(--line));color:var(--leaf)}
 
 /* flower drawing: stages u (seed), l0..l4 (growing to bloom), wilt (drooping) */
 .fl{display:block;width:100%;height:100%;overflow:visible;position:relative}
@@ -216,6 +208,28 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .stages i.pulse{animation:dot .7s .2s}
 @keyframes dot{40%{transform:scale(1.9)}}
 
+/* garden map: all 100 plants and the row trees from above */
+.scene{display:flex;align-items:center;gap:10px}
+.scene .hero{flex:1;min-width:0}
+.mapbtn{display:none;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;border-radius:14px;background:none;
+  color:var(--muted);font:800 .75rem var(--body);font-variant-numeric:tabular-nums;cursor:pointer}
+.map{display:grid;grid-template-columns:repeat(11,10px);gap:2px;padding:7px;border-radius:14px;background:var(--bed)}
+.map i{position:relative;width:10px;height:10px;border-radius:50%}
+.map i::before{content:"";position:absolute;inset:0;margin:auto;width:4px;height:4px;border-radius:50%;background:var(--soil);opacity:.4}
+.map .l0::before,.map .l1::before,.map .l2::before,.map .l3::before{width:6px;height:6px;background:var(--stem);opacity:1}
+.map .l2::before{width:8px;height:8px}
+.map .l3::before{width:10px;height:10px;background:radial-gradient(circle,var(--pc) 0 36%,var(--stem) 40%)}
+.map .l4::before{width:10px;height:10px;background:radial-gradient(circle,var(--cc) 0 30%,var(--pc) 34%);opacity:1;box-shadow:0 0 0 .5px rgba(0,0,0,.2)}
+.map .wilt::before{width:6px;height:6px;background:var(--dry);opacity:1}
+.map .t::before{width:10px;height:10px;background:#3E8F45;opacity:.14}
+.map .t.done::before{opacity:1}
+.map .off{opacity:.3}
+.map .cur{box-shadow:0 0 0 2px var(--sun);animation:mcur .9s ease-in-out infinite alternate}
+@keyframes mcur{from{box-shadow:0 0 0 1.5px var(--sun)}to{box-shadow:0 0 0 3.5px var(--sun)}}
+.map .grew::before{animation:mgrow .6s .45s backwards}
+@keyframes mgrow{from{transform:scale(0)}60%{transform:scale(2.2)}}
+.seedfly{position:fixed;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;z-index:31;pointer-events:none}
+
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted);font-weight:700}
 .legend .lg{display:flex;align-items:center;gap:4px}
 .legend .lgf{width:20px;height:31px}
@@ -272,7 +286,28 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .perr{margin:0;color:var(--berry);font-weight:700;font-size:.9rem}
 .pfoot{justify-content:center}
 canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
-@media (prefers-reduced-motion: reduce){ .shake,.pop,.fl .sway,.cr .wl,.cr .wr,.critter.new,.tree.new svg,.yard-items .new,.bloomed .fl .petals,.hero .fl,.stages i.pulse{animation:none} .hero .pot,.hero .tag{transition:none} .fl *{transition:none!important} }
+
+@media (min-width:841px){#toGarden,#toPlay{display:none}}
+@media (max-width:840px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .wrap{padding-top:8px;gap:10px}
+  /* one header row; the bloom count moves under the map */
+  h1,.stat.blooms{display:none}
+  header,.stats{flex-wrap:nowrap}
+  .brand,.who{min-width:0}
+  .stats{flex:none}
+  .stat{padding:6px 12px}
+  .play{padding:12px;gap:10px}
+  .task{padding-top:0}
+  .mapbtn{display:flex}
+  .scene{align-items:stretch}
+  .hero{height:auto}
+  .hero .tag{left:auto;right:-6px;top:auto;bottom:40px}
+  .pad{gap:8px}
+  /* the keys take the height that is left, so task, map and keys fit on one screen */
+  .pad button{height:56px;height:clamp(48px,(100dvh - 440px)/4,64px)}
+}
+@media (prefers-reduced-motion: reduce){ .shake,.pop,.fl .sway,.cr .wl,.cr .wr,.critter.new,.tree.new svg,.yard-items .new,.map .grew::before,.map .cur,.bloomed .fl .petals,.hero .fl,.stages i.pulse{animation:none} .hero .pot,.hero .tag{transition:none} .fl *{transition:none!important} }
 </style>
 
 <canvas id="fx"></canvas>
@@ -285,7 +320,7 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
     <div class="stats">
       <div class="stat"><small>Punkte</small><b id="sPoints">0</b></div>
       <div class="stat"><small>Serie</small><b id="sStreak">0</b><span class="mult" id="sMult" hidden>×2</span></div>
-      <div class="stat"><small>Blüten</small><b id="sBlooms">0</b></div>
+      <div class="stat blooms"><small>Blüten</small><b id="sBlooms">0</b></div>
     </div>
   </header>
 
@@ -296,7 +331,10 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
         <div class="progress" id="progress"></div>
       </div>
       <div class="task" id="task">
-        <div class="hero" id="hero"></div>
+        <div class="scene">
+          <button class="mapbtn" id="mapBtn" aria-label="Garten ansehen"><span class="map" id="map"></span><span id="mapCap"></span></button>
+          <div class="hero" id="hero"></div>
+        </div>
         <div class="eq" aria-live="polite"><span id="qa">7</span><span class="x">×</span><span id="qb">8</span><span>=</span><span class="answer empty" id="ans">?</span></div>
       </div>
       <div class="feedback" id="fb" aria-live="polite"></div>
@@ -308,10 +346,11 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
       </div>
     </section>
 
-    <aside class="garden" aria-label="Mein Garten">
-      <div class="ghead"><h2 id="gTitle">Mein Garten</h2><button class="gbtn" id="shopBtn">Garten-Laden</button></div>
+    <aside class="garden" id="garden" aria-label="Mein Garten">
+      <div class="ghead"><h2 id="gTitle">Mein Garten</h2><button class="btn" id="toPlay">Weiter üben</button></div>
       <p class="gcount" id="gCount">0 von 100 blühen</p>
       <div class="bed"><div class="grid" id="grid"></div><div class="yard" id="yard"></div></div>
+      <div class="gifts" id="gifts" aria-label="Geschenke"></div>
       <div class="legend" id="legend"></div>
       <p style="margin:0;color:var(--muted);font-size:.88rem">Jede richtige Antwort lässt eine Pflanze wachsen. Bei einem Fehler welkt sie und die Aufgabe kommt bald wieder, bis sie sitzt.</p>
       <div class="settings">
@@ -327,22 +366,15 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
   </div>
 </div>
 
-<div class="overlay" id="shop" hidden>
-  <div class="sheet shop" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
-    <h2 id="shopTitle">Garten-Laden</h2>
-    <p class="sub" id="shopPoints"></p>
-    <div class="items" id="shopItems"></div>
-    <button class="btn" id="shopClose">Schließen</button>
-  </div>
-</div>
-
 <div class="overlay" id="summary" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sumTitle">
     <h2 id="sumTitle">Runde geschafft!</h2>
     <div class="score" id="sumScore">17<small> / 20</small></div>
     <p id="sumPoints"></p>
+    <p id="sumGarden"></p>
     <div id="sumMissWrap"><p style="margin-bottom:8px">Diese Aufgaben gießen wir weiter:</p><div class="misses" id="sumMiss"></div></div>
     <button class="big-go" id="again">Neue Runde</button>
+    <button class="btn" id="toGarden">Garten ansehen</button>
   </div>
 </div>
 
@@ -371,9 +403,9 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 const KEY='einmaleins-garten-v2',OLDKEY='einmaleins-garten-v1',ROUND=20;
 const $=id=>document.getElementById(id);
 
-function fresh(){return {facts:{},points:0,best:0,rows:[1,2,3,4,5,6,7,8,9,10],spent:0,deco:[],critters:[]};}
-// profiles saved before the shop and the visitors existed have no such fields
-function upgrade(d){d.spent=d.spent||0;d.deco=d.deco||[];d.critters=d.critters||[];return d;}
+function fresh(){return {facts:{},points:0,best:0,rows:[1,2,3,4,5,6,7,8,9,10],deco:[],critters:[]};}
+// profiles saved before the gifts and the visitors existed have no such fields
+function upgrade(d){d.deco=d.deco||[];d.critters=d.critters||[];return d;}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function loadStore(){
   try{const r=localStorage.getItem(KEY);if(r){const st=JSON.parse(r);if(st&&Array.isArray(st.profiles)&&st.data)return st;}}catch(e){}
@@ -391,8 +423,8 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(G));}catch(e){}}
 let S=upgrade((G.active&&G.data[G.active])||fresh());
 function activeProfile(){return G.profiles.find(p=>p.id===G.active)||null;}
 
-const sess={streak:0,qn:0,comeback:[],cur:null,last:null,input:'',phase:'ask',t0:0,
-  round:{n:0,right:0,points:0,marks:[],missed:[]}};
+const newRound=()=>({n:0,right:0,points:0,blooms:0,marks:[],missed:[]});
+const sess={streak:0,qn:0,comeback:[],cur:null,last:null,input:'',phase:'ask',t0:0,round:newRound()};
 
 /* ---------- picking: errors come back often, mastered facts rarely ---------- */
 function fact(k){return S.facts[k]||(S.facts[k]={lvl:0,seen:0,right:0,wrong:0,wilt:false});}
@@ -422,7 +454,7 @@ function newTask(){
   sess.qn++;
   sess.cur=pickNext();
   sess.input='';sess.phase='ask';sess.t0=performance.now();sess.bloom=null;sess.moment=null;sess.newTree=null;sess.newDeco=null;
-  setFb('','');
+  setFb('',hint());
   render();
 }
 
@@ -443,37 +475,40 @@ function submit(){
     const pts=10*mult()+(fast?5:0);S.points+=pts;sess.round.points+=pts;sess.round.right++;sess.round.marks.push('ok');
     const bloom=before===3&&f.lvl===4;
     const rowDone=bloom&&rowComplete(a);
+    const gift=bloom?claimGifts():null;
     const visitor=sess.streak%5===0?newCritter():null;
     let sub='+'+pts+' Punkte'+(fast?' (schnell!)':'');
-    if(rowDone){sub='Die ganze '+a+'er-Reihe blüht! Ein Baum wächst. (+'+pts+')';sess.newTree=a;}
+    if(rowDone){sub='Die '+a+'er-Reihe blüht! Ein Baum wächst.';sess.newTree=a;}
+    else if(gift)sub=sized(gift,24)+'Geschenk: '+gift.name+'!';
     else if(visitor)sub=CRITTERS[visitor.kind].name+' zieht ein! (+'+pts+')';
     else if(bloom)sub='Neue Blüte! '+sub;
-    if(bloom)sess.bloom=sess.cur;
+    if(bloom){sess.bloom=sess.cur;sess.round.blooms++;}
+    if(gift)sess.newDeco=gift.id;
     setFb('good','<span class="big">'+praise[Math.floor(Math.random()*praise.length)]+'</span><span class="sub">'+sub+'</span>');
     sess.phase='ok';
     const freshAgain=wasWilt&&!f.wilt;
     sess.moment=rowDone?{type:'bloom',text:'Reihe komplett!'}:bloom?{type:'bloom',text:'Blüht!'}:
       {type:'good',text:freshAgain?'Wieder frisch!':before===4?'Blüht weiter!':'Wächst!'};
     sess.grew=true;
-    save();render();pop();
+    save();render();pop();flyToMap();
     if(visitor)flyCritter(visitor);
-    if(rowDone){sfx('fanfare');haptic('bloom');sparkle(40);confetti();setTimeout(confetti,600);}
+    if(rowDone||gift){sfx('fanfare');haptic('bloom');sparkle(40);confetti();setTimeout(confetti,600);}
     else if(bloom){sfx('bloom');haptic('bloom');sparkle(40);confetti();}
     else{sfx('good');haptic('good');sparkle(14);if(sess.streak%5===0){sfx('streak');if(!visitor)confetti();}}
-    setTimeout(newTask,rowDone?2800:bloom||visitor?2100:1350);
+    setTimeout(newTask,rowDone||gift?2800:bloom||visitor?2100:1350);
   }else{
     f.wrong++;f.lvl=0;f.wilt=true;sess.streak=0;sess.round.marks.push('bad');
     if(!sess.round.missed.includes(sess.cur))sess.round.missed.push(sess.cur);
     sess.comeback=sess.comeback.filter(c=>c.key!==sess.cur);
     sess.comeback.push({key:sess.cur,due:sess.qn+2},{key:sess.cur,due:sess.qn+6});
-    setFb('bad','<span class="big">'+a+' × '+b+' = '+ans+'</span><span class="sub">Tipp die '+ans+' ein. Die Aufgabe kommt gleich nochmal.</span>');
+    setFb('bad','<span class="big">'+a+' × '+b+' = '+ans+'</span><span class="sub">Tipp die '+ans+' ein. Das kommt bald wieder.</span>');
     sess.phase='fix';sess.input='';sess.moment={type:'bad',text:'Verwelkt'};
     wiggle();save();render();sfx('bad');haptic('bad');
   }
 }
 
 function press(k){
-  if(sess.phase==='ok'||!$('summary').hidden||!$('profiles').hidden||!$('shop').hidden)return;
+  if(sess.phase==='ok'||!$('summary').hidden||!$('profiles').hidden)return;
   if(k==='ok')return submit();
   if(k==='del'){if(!sess.input)return;sess.input=sess.input.slice(0,-1);sfx('del');}
   else{if(sess.input.length>=3)return;sess.input=(sess.input+k).replace(/^0+(?=\d)/,'');sfx('tap');}
@@ -594,41 +629,41 @@ function renderCritters(){
   }
 }
 
-/* ---------- garden shop: points buy decorations ---------- */
+/* ---------- gifts: a decoration for the garden at each bloom count ---------- */
 const svg=(vb,body)=>'<svg viewBox="'+vb+'" aria-hidden="true">'+body+'</svg>';
 const DECO=[
-  {id:'kanne',name:'Gießkanne',price:100,h:40,pos:2,svg:svg('0 0 42 30',
+  {id:'kanne',name:'Gießkanne',at:3,h:40,pos:2,svg:svg('0 0 42 30',
     '<path d="M11 10Q17 -1 25 10" fill="none" stroke="#2F7FB8" stroke-width="2.6" stroke-linecap="round"/>'+
     '<path d="M27 21L37 10" stroke="#4FA8E6" stroke-width="3.4" stroke-linecap="round"/>'+
     '<ellipse cx="38.2" cy="8.8" rx="3" ry="2" transform="rotate(-45 38.2 8.8)" fill="#2F7FB8"/>'+
     '<rect x="7" y="10" width="22" height="18" rx="4" fill="#4FA8E6"/><rect x="7" y="14" width="22" height="3" fill="#2F7FB8" opacity=".5"/>')},
-  {id:'pilze',name:'Pilze',price:150,h:38,pos:5,svg:svg('0 0 36 30',
+  {id:'pilze',name:'Pilze',at:10,h:38,pos:5,svg:svg('0 0 36 30',
     '<rect x="8.5" y="15" width="6" height="14" rx="2.5" fill="#F3E6D0"/><path d="M2 17Q11.5 0 21 17Z" fill="#D9465F"/>'+
     '<circle cx="8" cy="11" r="1.6" fill="#fff"/><circle cx="14.5" cy="8.5" r="1.3" fill="#fff"/><circle cx="16" cy="13.5" r="1.2" fill="#fff"/>'+
     '<rect x="25" y="20" width="4.5" height="9" rx="2" fill="#F3E6D0"/><path d="M20 21.5Q27.2 9 34.5 21.5Z" fill="#E8783C"/>'+
     '<circle cx="25" cy="17.5" r="1" fill="#fff"/><circle cx="29.5" cy="16.5" r="1.1" fill="#fff"/>')},
-  {id:'zaun',name:'Gartenzaun',price:200,h:30,fence:true,svg:svg('0 0 48 30',
+  {id:'zaun',name:'Gartenzaun',at:20,h:30,fence:true,svg:svg('0 0 48 30',
     '<rect y="12" width="48" height="3" fill="#C9A26E"/><rect y="22" width="48" height="3" fill="#C9A26E"/>'+
     [4,20,36].map(x=>'<path d="M'+x+' 30V9L'+(x+3)+' 5L'+(x+6)+' 9V30Z" fill="#E6CFA3" stroke="#B89466" stroke-width=".6"/>').join(''))},
-  {id:'zwerg',name:'Gartenzwerg',price:300,h:58,pos:3,svg:svg('0 0 28 46',
+  {id:'zwerg',name:'Gartenzwerg',at:32,h:58,pos:3,svg:svg('0 0 28 46',
     '<path d="M5 41Q14 22 23 41Z" fill="#3E7BD9"/>'+
     '<ellipse cx="9.5" cy="42.5" rx="4" ry="2.3" fill="#5A3A22"/><ellipse cx="18.5" cy="42.5" rx="4" ry="2.3" fill="#5A3A22"/>'+
     '<circle cx="14" cy="21.5" r="5.5" fill="#F6C9A8"/>'+
     '<path d="M8.5 23Q14 39 19.5 23Q14 27 8.5 23Z" fill="#FFFFFF" stroke="#D8D8D8" stroke-width=".4"/>'+
     '<circle cx="14" cy="23.6" r="1.7" fill="#E89A7A"/><circle cx="11.8" cy="21" r=".8" fill="#2A2016"/><circle cx="16.2" cy="21" r=".8" fill="#2A2016"/>'+
     '<path d="M14 1L23.5 18.5H4.5Z" fill="#D9465F"/><rect x="4" y="17" width="20" height="2.6" rx="1.3" fill="#B83A50"/>')},
-  {id:'igel',name:'Igel',price:350,h:34,pos:6,svg:svg('0 0 42 28',
+  {id:'igel',name:'Igel',at:46,h:34,pos:6,svg:svg('0 0 42 28',
     '<path d="M4 25L3 17L7 19L7 11L11 15L13 7L16 12L19 5L21 11L24 5L26 11L29 7L30 14L33 12L33 25Z" fill="#6B4E33"/>'+
     '<path d="M5 25Q6 12 19 10Q31 10 34 25Z" fill="#8A6A48"/>'+
     '<path d="M28 25Q28 15 35 15Q40 16 41 21Q40 25 34 25Z" fill="#E8C9A0"/>'+
     '<circle cx="40.6" cy="20.6" r="1.4" fill="#2A2016"/><circle cx="34.6" cy="18.6" r="1" fill="#2A2016"/>'+
     '<ellipse cx="12" cy="26" rx="2.5" ry="1.4" fill="#5A3A22"/><ellipse cx="29" cy="26" rx="2.5" ry="1.4" fill="#5A3A22"/>')},
-  {id:'haus',name:'Vogelhäuschen',price:450,h:72,pos:1,svg:svg('0 0 30 56',
+  {id:'haus',name:'Vogelhäuschen',at:62,h:72,pos:1,svg:svg('0 0 30 56',
     '<rect x="13.5" y="27" width="3" height="29" fill="#8A6A48"/><rect x="6" y="13" width="18" height="16" rx="1.5" fill="#E8A85C"/>'+
     '<circle cx="15" cy="20" r="3.2" fill="#3A2A20"/><rect x="13" y="25" width="4" height="1.4" rx=".7" fill="#8A6A48"/>'+
     '<path d="M2.5 15L15 3L27.5 15Z" fill="#B5523B" stroke="#8E3E2C" stroke-width=".6" stroke-linejoin="round"/>'+
     '<circle cx="22" cy="8" r="2.6" fill="#4FA8E6"/><path d="M24.4 7.4L26.8 8.1L24.4 8.9Z" fill="#F4B323"/><circle cx="22.9" cy="7.3" r=".5" fill="#2A2016"/>')},
-  {id:'teich',name:'Teich',price:600,h:32,pos:4,svg:svg('0 0 84 26',
+  {id:'teich',name:'Teich',at:80,h:32,pos:4,svg:svg('0 0 84 26',
     '<path d="M6 19Q5 7 3 2M9 19Q9 8 11 3M12 19Q13 10 16 7" stroke="#4A9A3C" stroke-width="1.4" fill="none" stroke-linecap="round"/>'+
     '<ellipse cx="11" cy="5.5" rx="1.2" ry="3" fill="#7A4E2C"/>'+
     '<ellipse cx="44" cy="17" rx="38" ry="8.5" fill="#3A86C0"/><ellipse cx="44" cy="16" rx="35" ry="7" fill="#5DB2EA"/>'+
@@ -641,46 +676,38 @@ const FENCE='<svg class="fence" aria-hidden="true"><defs><pattern id="fencePat" 
   '<rect y="12" width="100%" height="3" fill="#C9A26E"/><rect y="22" width="100%" height="3" fill="#C9A26E"/>'+
   '<rect width="100%" height="30" fill="url(#fencePat)"/></svg>';
 const sized=(d,h)=>d.svg.replace('<svg','<svg style="height:'+h+'px"');
-function balance(){return S.points-S.spent;}
-function canBuy(){return DECO.some(d=>!S.deco.includes(d.id)&&d.price<=balance());}
+function claimGifts(){
+  const n=bloomCount(S);let got=null;
+  for(const d of DECO)if(d.at<=n&&!S.deco.includes(d.id)){S.deco.push(d.id);got=d;}
+  return got;
+}
+function hint(){
+  const n=bloomCount(S),d=DECO.find(d=>!S.deco.includes(d.id)),need=d?d.at-n:100-n;
+  if(need<=0)return '';
+  return '<span class="sub">'+(d?sized(d,24):'')+'Noch '+need+(need===1?' Blüte':' Blüten')+(d?' bis zum Geschenk':', dann blüht alles')+'</span>';
+}
 function renderYard(){
   const key=G.active+'|'+S.deco.join();
   if(sess.yardKey===key)return;sess.yardKey=key;
   const items=DECO.filter(d=>!d.fence&&S.deco.includes(d.id)).sort((x,y)=>x.pos-y.pos);
   $('yard').innerHTML=(S.deco.includes('zaun')?FENCE:'')+
     '<div class="yard-items">'+items.map(d=>'<span'+(d.id===sess.newDeco?' class="new"':'')+' title="'+d.name+'">'+sized(d,d.h)+'</span>').join('')+'</div>'+
-    (S.deco.length?'':'<p>Im Garten-Laden gibt es Deko für deinen Garten.</p>');
+    (S.deco.length?'':'<p>Für Blüten bekommst du Geschenke für deinen Garten.</p>');
+  $('gifts').innerHTML=DECO.map(d=>{const own=S.deco.includes(d.id);
+    return '<span class="gift'+(own?' got':'')+'" title="'+d.name+'">'+sized(d,30)+(own?'Im Garten':d.at+' Blüten')+'</span>';}).join('');
 }
-function renderShop(){
-  $('shopPoints').textContent='Du hast '+balance()+' Punkte. Jede richtige Antwort bringt neue.';
-  const box=$('shopItems');box.innerHTML='';
-  DECO.forEach(d=>{
-    const own=S.deco.includes(d.id),miss=d.price-balance();
-    const it=mk('div','item'+(own?' owned':'')),pv=mk('div','pv');pv.innerHTML=sized(d,Math.min(54,Math.round(d.h*1.6)));
-    const btn=mk('button',null,own?'Im Garten':miss>0?'Noch '+miss+' Punkte':'Kaufen');
-    btn.disabled=own||miss>0;btn.onclick=()=>buy(d);
-    it.append(pv,mk('b',null,d.name),mk('span','price',d.price+' Punkte'),btn);box.append(it);
-  });
-}
-function openShop(){renderShop();$('shop').hidden=false;sfx('tap');}
-function closeShop(){$('shop').hidden=true;}
-function buy(d){
-  if(S.deco.includes(d.id)||balance()<d.price)return;
-  S.spent+=d.price;S.deco.push(d.id);sess.newDeco=d.id;save();
-  closeShop();render();sfx('bloom');haptic('bloom');confetti();
-  $('yard').scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
-}
-
-const cells={};
+const cells={},mcells={};
 function buildGrid(){
-  const g=$('grid');g.innerHTML='';
+  const g=$('grid'),m=$('map');g.innerHTML='';m.innerHTML='';
   g.appendChild(Object.assign(document.createElement('div'),{className:'lab',textContent:'×'}));
   for(let b=1;b<=10;b++)g.appendChild(Object.assign(document.createElement('div'),{className:'lab',textContent:b}));
   g.appendChild(Object.assign(document.createElement('div'),{className:'lab star',textContent:'★',title:'Ein Baum für jede Reihe, die ganz blüht'}));
   for(let a=1;a<=10;a++){
     g.appendChild(Object.assign(document.createElement('div'),{className:'lab',textContent:a}));
-    for(let b=1;b<=10;b++){const c=document.createElement('div');c.className='cell '+stage(a+'x'+b);c.title=a+' × '+b;c.innerHTML=flowerSVG(a);g.appendChild(c);cells[a+'x'+b]=c;}
+    for(let b=1;b<=10;b++){const c=document.createElement('div');c.className='cell '+stage(a+'x'+b);c.title=a+' × '+b;c.innerHTML=flowerSVG(a);g.appendChild(c);cells[a+'x'+b]=c;
+      const i=mk('i');i.style.cssText='--pc:'+FLOWERS[a-1][0]+';--cc:'+FLOWERS[a-1][1];m.appendChild(i);mcells[a+'x'+b]=i;}
     const t=document.createElement('div');t.className='tree';t.id='tree'+a;t.title='Baum der '+a+'er-Reihe';t.innerHTML=treeSVG(a);g.appendChild(t);
+    m.appendChild(mk('i','t')).id='mtree'+a;
   }
 }
 function buildLegend(){
@@ -707,7 +734,7 @@ function render(){
   $('qa').textContent=a;$('qb').textContent=b;
   const ans=$('ans');ans.textContent=sess.input||'?';ans.classList.toggle('empty',!sess.input);
   $('task').className='task '+(sess.phase==='fix'?'fix':sess.phase==='ok'?'ok':'');
-  $('sPoints').textContent=balance();$('sStreak').textContent=sess.streak;
+  $('sPoints').textContent=S.points;$('sStreak').textContent=sess.streak;
   const m=mult();$('sMult').hidden=m===1;$('sMult').textContent='×'+m;
   $('bestText').textContent='Beste Serie: '+S.best;
   const shown=Math.min(sess.round.n+(sess.phase==='ask'?1:0),ROUND);
@@ -724,6 +751,8 @@ function render(){
     if(k===sess.cur)cls+=' cur';
     if(k===sess.bloom)cls+=' bloomed';
     if(c.className!==cls)c.className=cls;
+    const mcls=st+(S.rows.includes(row)?'':' off')+(k!==sess.cur?'':sess.grew?' cur grew':' cur');
+    if(mcells[k].className!==mcls)mcells[k].className=mcls;
   }
   const hero=$('hero'),mo=sess.moment;
   hero.className='hero '+stage(sess.cur)+(sess.bloom===sess.cur?' bloomed':'')+(mo?' moment m-'+mo.type:'');
@@ -738,12 +767,13 @@ function render(){
     const t=$('tree'+r),done=rowComplete(r);if(done)trees++;
     const cls='tree'+(done?' done':'')+(done&&r===sess.newTree?' new':'')+(S.rows.includes(r)?'':' off');
     if(t.className!==cls)t.className=cls;
+    $('mtree'+r).className='t'+(done?' done':'')+(S.rows.includes(r)?'':' off');
   }
   renderCritters();renderYard();
   const n=S.critters.length;
   $('sBlooms').textContent=blooms;
   $('gCount').textContent=blooms+' von 100 blühen'+(trees?' · '+trees+(trees===1?' Baum':' Bäume'):'')+(n?' · '+n+(n===1?' Tier':' Tiere'):'');
-  $('shopBtn').classList.toggle('can',canBuy());
+  $('mapCap').textContent=blooms+' von 100 blühen';
   $('soundBtn').textContent='Ton: '+(G.sound?'an':'aus');
   $('hapticBtn').textContent='Vibration: '+(G.haptic?'an':'aus');
 }
@@ -753,6 +783,7 @@ function showSummary(){
   $('sumScore').innerHTML=r.right+'<small> / '+ROUND+'</small>';
   $('sumTitle').textContent=r.right===ROUND?'Alles richtig!':r.right>=16?'Toll gemacht!':'Runde geschafft!';
   $('sumPoints').textContent='+'+r.points+' Punkte in dieser Runde';
+  $('sumGarden').textContent=(r.blooms?r.blooms+(r.blooms===1?' neue Blüte! ':' neue Blüten! '):'Dein Garten wächst. ')+bloomCount(S)+' von 100 blühen.';
   const miss=$('sumMiss');miss.innerHTML='';
   r.missed.forEach(k=>{const s=document.createElement('span');s.textContent=k.replace('x',' × ');miss.appendChild(s);});
   $('sumMissWrap').hidden=!r.missed.length;
@@ -761,7 +792,11 @@ function showSummary(){
   if(r.right>=16)confetti();
   $('again').focus();
 }
-$('again').onclick=()=>{$('summary').hidden=true;sess.round={n:0,right:0,points:0,marks:[],missed:[]};newTask();};
+$('again').onclick=()=>{$('summary').hidden=true;sess.round=newRound();newTask();};
+function showGarden(){$('garden').scrollIntoView({behavior:reduce?'auto':'smooth'});}
+$('toGarden').onclick=()=>{$('again').click();showGarden();};
+$('mapBtn').onclick=showGarden;
+$('toPlay').onclick=()=>scrollTo({top:0,behavior:reduce?'auto':'smooth'});
 
 /* ---------- sound effects (synthesized, no files) ---------- */
 let ac=null,master=null;
@@ -849,6 +884,14 @@ function rainOnFlower(){
   const {x,y,w}=flowerPoint(),rain=getComputedStyle(document.documentElement).getPropertyValue('--rain').trim();
   addParts(Array.from({length:12},(_,i)=>({kind:'drop',x:x+(Math.random()-.5)*w*1.1,y:y-60-Math.random()*50,vx:0,vy:Math.random()*2,r:2.6,c:rain,t:-i*2,max:30})));
 }
+function flyToMap(){
+  const m=mcells[sess.cur];
+  if(reduce||!m.offsetParent)return;
+  const {x,y}=flowerPoint(),r=m.getBoundingClientRect(),[pc,cc]=FLOWERS[sess.cur.split('x')[0]-1],el=mk('i','seedfly');
+  el.style.background=pc==='#FFFFFF'?cc:pc;document.body.appendChild(el);
+  el.animate([{transform:'translate('+x+'px,'+y+'px) scale(2)'},
+    {transform:'translate('+(r.left+r.width/2)+'px,'+(r.top+r.height/2)+'px)'}],{duration:500,easing:'ease-in'}).onfinish=()=>el.remove();
+}
 function confetti(){
   const W=innerWidth,H=innerHeight,cols=FLOWERS.map(f=>f[0]).filter(c=>c!=='#FFFFFF');
   addParts(Array.from({length:80},()=>({kind:'petal',x:W/2+(Math.random()-.5)*W*.35,y:H*.32,vx:(Math.random()-.5)*8,vy:-Math.random()*9-3,g:.22,wob:.6,
@@ -858,7 +901,6 @@ function confetti(){
 /* ---------- controls ---------- */
 $('pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k);});
 document.addEventListener('keydown',e=>{
-  if(!$('shop').hidden){if(e.key==='Escape')closeShop();return;}
   if(!$('profiles').hidden){if(e.key==='Escape')closeProfiles();return;}
   if(!$('summary').hidden){if(e.key==='Enter'){e.preventDefault();$('again').click();}return;}
   if(/^[0-9]$/.test(e.key))press(e.key);
@@ -872,7 +914,7 @@ function resetIdle(){
   $('resetBtn').onclick=()=>{
     ra.innerHTML='<span style="font-weight:700;font-size:.9rem">Alles löschen?</span> <button class="btn solid-danger" id="resetYes">Ja, löschen</button> <button class="btn" id="resetNo">Abbrechen</button>';
     $('resetYes').onclick=()=>{const rows=S.rows;S=fresh();S.rows=rows;if(G.active)G.data[G.active]=S;save();
-      sess.streak=0;sess.comeback=[];sess.round={n:0,right:0,points:0,marks:[],missed:[]};resetIdle();newTask();};
+      sess.streak=0;sess.comeback=[];sess.round=newRound();resetIdle();newTask();};
     $('resetNo').onclick=resetIdle;
   };
 }
@@ -885,8 +927,8 @@ function bloomCount(d){let n=0;for(const k in (d&&d.facts)||{}){const f=d.facts[
 function nextFlower(){const used=G.profiles.map(p=>p.flower);for(let r=1;r<=10;r++)if(!used.includes(r))return r;return 1;}
 
 function activate(id){
-  G.active=id;S=upgrade(G.data[id]||(G.data[id]=fresh()));save();closeShop();
-  sess.streak=0;sess.comeback=[];sess.last=null;sess.heroKey=null;sess.round={n:0,right:0,points:0,marks:[],missed:[]};
+  G.active=id;S=upgrade(G.data[id]||(G.data[id]=fresh()));claimGifts();save();
+  sess.streak=0;sess.comeback=[];sess.last=null;sess.heroKey=null;sess.round=newRound();
   buildRows();resetIdle();updateWho();newTask();
 }
 function updateWho(){
@@ -954,11 +996,8 @@ $('pNewBtn').onclick=()=>{pv.adding=true;pv.flower=nextFlower();$('pNewName').va
 $('pEditBtn').onclick=()=>{pv.edit=!pv.edit;pv.confirm=null;renderProfiles();};
 $('pClose').onclick=closeProfiles;
 $('whoBtn').onclick=()=>openProfiles(false);
-$('shopBtn').onclick=openShop;
-$('shopClose').onclick=closeShop;
-$('shop').onclick=e=>{if(e.target===$('shop'))closeShop();};
 
-buildGrid();buildLegend();buildRows();resetIdle();updateWho();newTask();
+buildGrid();buildLegend();buildRows();resetIdle();updateWho();claimGifts();newTask();
 if(!activeProfile()||G.profiles.length>1)openProfiles(false);
 })();
 </script>

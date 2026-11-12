@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Einmaleins-Garten</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="fx"></canvas>
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <h1>Einmaleins-<span>Garten</span></h1>
+          <button class="who" id="whoBtn" aria-label="Profil wechseln">
+            <span class="ava l4" id="whoAva"></span>
+            <span id="whoName">Profil wählen</span>
+          </button>
+        </div>
+        <div class="stats">
+          <div class="stat"><small>Punkte</small><b id="sPoints">0</b></div>
+          <div class="stat">
+            <small>Serie</small><b id="sStreak">0</b>
+            <span class="mult" id="sMult" hidden>×2</span>
+          </div>
+          <div class="stat blooms">
+            <small>Blüten</small><b id="sBlooms">0</b>
+          </div>
+        </div>
+      </header>
+
+      <div class="main">
+        <section class="play" aria-label="Aufgabe">
+          <div>
+            <div class="roundlabel">
+              <span id="roundText">Aufgabe 1 von 20</span>
+              <span id="bestText">Beste Serie: 0</span>
+            </div>
+            <div class="progress" id="progress"></div>
+          </div>
+          <div class="task" id="task">
+            <div class="scene">
+              <button class="mapbtn" id="mapBtn" aria-label="Garten ansehen">
+                <span class="map" id="map"></span>
+                <span id="mapCap"></span>
+              </button>
+              <div class="hero" id="hero"></div>
+            </div>
+            <div class="eq" aria-live="polite">
+              <span id="qa">7</span>
+              <span class="x">×</span>
+              <span id="qb">8</span>
+              <span>=</span>
+              <span class="answer empty" id="ans">?</span>
+            </div>
+          </div>
+          <div class="feedback" id="fb" aria-live="polite"></div>
+          <div class="pad" id="pad">
+            <button data-k="1">1</button>
+            <button data-k="2">2</button>
+            <button data-k="3">3</button>
+            <button data-k="4">4</button>
+            <button data-k="5">5</button>
+            <button data-k="6">6</button>
+            <button data-k="7">7</button>
+            <button data-k="8">8</button>
+            <button data-k="9">9</button>
+            <button data-k="del" class="del" aria-label="Löschen">⌫</button>
+            <button data-k="0">0</button>
+            <button data-k="ok" class="go">OK</button>
+          </div>
+        </section>
+
+        <aside class="garden" id="garden" aria-label="Mein Garten">
+          <div class="ghead">
+            <h2 id="gTitle">Mein Garten</h2>
+            <button class="btn" id="toPlay">Weiter üben</button>
+          </div>
+          <p class="gcount" id="gCount">0 von 100 blühen</p>
+          <div class="bed">
+            <div class="grid" id="grid"></div>
+            <div class="yard" id="yard"></div>
+          </div>
+          <div class="gifts" id="gifts" aria-label="Geschenke"></div>
+          <div class="legend" id="legend"></div>
+          <p style="margin: 0; color: var(--muted); font-size: 0.88rem">
+            Jede richtige Antwort lässt eine Pflanze wachsen. Bei einem Fehler
+            welkt sie und die Aufgabe kommt bald wieder, bis sie sitzt.
+          </p>
+          <div class="settings">
+            <h3>Welche Reihen üben?</h3>
+            <div class="chips" id="rows"></div>
+            <div class="row">
+              <button class="btn" id="soundBtn">Ton: an</button>
+              <button class="btn" id="hapticBtn">Vibration: an</button>
+              <span id="resetArea"></span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="overlay" id="summary" hidden>
+      <div
+        class="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sumTitle"
+      >
+        <h2 id="sumTitle">Runde geschafft!</h2>
+        <div class="score" id="sumScore">17<small> / 20</small></div>
+        <p id="sumPoints"></p>
+        <p id="sumGarden"></p>
+        <div id="sumMissWrap">
+          <p style="margin-bottom: 8px">Diese Aufgaben gießen wir weiter:</p>
+          <div class="misses" id="sumMiss"></div>
+        </div>
+        <button class="big-go" id="again">Neue Runde</button>
+        <button class="btn" id="toGarden">Garten ansehen</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="profiles" hidden>
+      <div
+        class="sheet psheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pTitle"
+      >
+        <h2 id="pTitle">Wer spielt?</h2>
+        <div class="plist" id="pList"></div>
+        <form class="pnew" id="pNewForm" hidden>
+          <label class="plabel" for="pNewName">Name</label>
+          <input
+            class="pinput"
+            id="pNewName"
+            maxlength="20"
+            autocomplete="off"
+            placeholder="z. B. Lena"
+          />
+          <span class="plabel">Deine Blume</span>
+          <div class="pick" id="pPick"></div>
+          <p class="perr" id="pErr" hidden>Bitte gib einen Namen ein.</p>
+          <div class="row">
+            <button class="big-go" type="submit" style="flex: 1">
+              Profil anlegen
+            </button>
+            <button class="btn" type="button" id="pCancel">Abbrechen</button>
+          </div>
+        </form>
+        <div class="row pfoot">
+          <button class="btn" id="pNewBtn">+ Neues Profil</button>
+          <button class="btn" id="pEditBtn">Profile bearbeiten</button>
+          <button class="btn" id="pClose">Schließen</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

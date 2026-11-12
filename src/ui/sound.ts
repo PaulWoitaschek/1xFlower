@@ -90,6 +90,20 @@ const SFX = {
     );
     bell(1318.5, t + 0.36, 0.5, 0.07);
   },
+  buzz(t: number) {
+    tone(185, t, 0.55, { type: "sawtooth", vol: 0.022, to: 235, attack: 0.1 });
+    tone(196, t + 0.3, 0.6, {
+      type: "sawtooth",
+      vol: 0.02,
+      to: 165,
+      attack: 0.1,
+    });
+  },
+  flutter(t: number) {
+    [1568, 2093, 1760, 2349, 2637].forEach((f, i) =>
+      bell(f, t + 0.15 + i * 0.09, 0.4, 0.035),
+    );
+  },
   done(t: number) {
     [523, 659, 784].forEach((f, i) => bell(f, t + i * 0.12, 0.7, 0.09));
   },

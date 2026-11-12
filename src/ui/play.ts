@@ -1,22 +1,35 @@
 import { CRITTER_NAMES } from "../art/critters";
 import { sized } from "../art/deco";
-import { flowerSVG } from "../art/flowers";
+import { flowerSVG, varietyOf } from "../art/flowers";
 import { answer, multiplier, newRound, ROUND } from "../rules/answer";
-import { bloomCount, factors, freshGarden, stage } from "../rules/garden";
+import {
+  bloomCount,
+  bloomingNeighbours,
+  factors,
+  freshGarden,
+  stage,
+} from "../rules/garden";
 import { claimGifts, nextGift } from "../rules/gifts";
 import { pickNext } from "../rules/pick";
 import { upgrade } from "../rules/storage";
 import { $, mk, reduce } from "./dom";
 import {
   buildGarden,
-  buildLegend,
   flyCritter,
   flyToMap,
   renderGarden,
   showGarden,
 } from "./garden";
 import { haptic } from "./haptics";
-import { confetti, rainOnFlower, sparkle } from "./particles";
+import { greetBloom } from "./life";
+import { confetti, heartsFromFlower, rainOnFlower, sparkle } from "./particles";
+import {
+  beeVisit,
+  butterflyBurst,
+  endRainbow,
+  passerBy,
+  rainbow,
+} from "./party";
 import {
   closeProfiles,
   initProfiles,
@@ -65,11 +78,29 @@ function newTask() {
   sess.phase = "ask";
   sess.t0 = performance.now();
   sess.bloom = null;
+  sess.friends = [];
   sess.moment = null;
   sess.newTree = null;
   sess.newDeco = null;
   setFb("", hint());
+  endRainbow();
   render();
+}
+
+// A new bloom is a small party: hearts rise, and bees or butterflies come.
+function bloomParty(big: boolean) {
+  heartsFromFlower(big ? 14 : 8);
+  greetBloom(sess.cur, sess.friends);
+  if (big) rainbow();
+  const bees = big || Math.random() < 0.5;
+  if (bees) {
+    beeVisit(3);
+    setTimeout(() => sfx("buzz"), 500);
+  }
+  if (big || !bees) {
+    butterflyBurst(big ? 4 : 5);
+    setTimeout(() => sfx("flutter"), 300);
+  }
 }
 
 function submit() {
@@ -132,7 +163,10 @@ function submit() {
   else if (visitor)
     sub = CRITTER_NAMES[visitor.kind] + " zieht ein! (+" + points + ")";
   else if (bloom) sub = "Neue Blüte! " + sub;
-  if (bloom) sess.bloom = sess.cur;
+  if (bloom) {
+    sess.bloom = sess.cur;
+    sess.friends = bloomingNeighbours(garden, sess.cur);
+  }
   if (gift) sess.newDeco = gift.id;
   setFb(
     "good",
@@ -168,11 +202,13 @@ function submit() {
     sparkle(40);
     confetti();
     setTimeout(confetti, 600);
+    bloomParty(true);
   } else if (bloom) {
     sfx("bloom");
     haptic("bloom");
     sparkle(40);
     confetti();
+    bloomParty(false);
   } else {
     sfx("good");
     haptic("good");
@@ -181,8 +217,12 @@ function submit() {
       sfx("streak");
       if (!visitor) confetti();
     }
+    if (!visitor && Math.random() < 0.3) passerBy();
   }
-  setTimeout(newTask, rowDone || gift ? 2800 : bloom || visitor ? 2100 : 1350);
+  setTimeout(
+    newTask,
+    rowDone || gift ? 2800 : bloom ? 2500 : visitor ? 2100 : 1350,
+  );
 }
 
 function press(k: string) {
@@ -239,7 +279,7 @@ function renderTask() {
     sess.heroKey = sess.cur;
     hero.innerHTML =
       '<div class="pot">' +
-      flowerSVG(a) +
+      flowerSVG(varietyOf(sess.cur)) +
       '</div><div class="stages" aria-hidden="true"><i></i><i></i><i></i><i class="top"></i></div><span class="tag"></span>';
   }
   const fact = garden.facts[sess.cur];
@@ -402,7 +442,6 @@ export function start() {
   initProfiles(activate);
 
   buildGarden();
-  buildLegend();
   buildRows();
   resetIdle();
   updateWho();

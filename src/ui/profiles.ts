@@ -1,4 +1,4 @@
-import { flowerSVG } from "../art/flowers";
+import { avatarVariety, flowerSVG } from "../art/flowers";
 import { bloomCount, freshGarden, uid } from "../rules/garden";
 import { $, mk } from "./dom";
 import { haptic } from "./haptics";
@@ -15,7 +15,7 @@ let activate: (id: string) => void;
 
 function avatar(row: number) {
   const el = mk("span", "ava l4");
-  el.innerHTML = flowerSVG(row);
+  el.innerHTML = flowerSVG(avatarVariety(row));
   return el;
 }
 
@@ -28,7 +28,7 @@ function nextFlower() {
 export function updateWho() {
   const p = activeProfile();
   $("whoName").textContent = p ? p.name : "Profil wählen";
-  $("whoAva").innerHTML = flowerSVG(p ? p.flower : 1);
+  $("whoAva").innerHTML = flowerSVG(avatarVariety(p ? p.flower : 1));
   $("gTitle").textContent = p ? "Garten von " + p.name : "Mein Garten";
 }
 
@@ -126,7 +126,7 @@ function renderProfiles() {
       button.type = "button";
       button.setAttribute("aria-pressed", String(row === view.flower));
       button.setAttribute("aria-label", "Blume " + row);
-      button.innerHTML = flowerSVG(row);
+      button.innerHTML = flowerSVG(avatarVariety(row));
       button.onclick = () => {
         view.flower = row;
         sfx("tap");

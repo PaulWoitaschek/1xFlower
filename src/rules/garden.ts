@@ -73,3 +73,26 @@ export function rowComplete(garden: Garden, row: number): boolean {
 export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
+
+// The plants in bloom right next to a plant, also across the corners.
+export function bloomingNeighbours(garden: Garden, key: string): string[] {
+  const [a, b] = factors(key);
+  const found = [];
+  for (let da = -1; da <= 1; da++) {
+    for (let db = -1; db <= 1; db++) {
+      const na = a + da;
+      const nb = b + db;
+      if ((!da && !db) || na < 1 || na > 10 || nb < 1 || nb > 10) continue;
+      if (stage(garden, keyOf(na, nb)) === "l4") found.push(keyOf(na, nb));
+    }
+  }
+  return found;
+}
+
+// Blooms draw bees and butterflies into the garden.
+export function guests(blooms: number): { bees: number; butterflies: number } {
+  return {
+    bees: Math.min(6, Math.ceil(blooms / 5)),
+    butterflies: Math.min(4, Math.floor(blooms / 8)),
+  };
+}

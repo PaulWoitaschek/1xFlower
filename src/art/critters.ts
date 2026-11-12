@@ -6,7 +6,7 @@ export const CRITTER_NAMES: Record<CritterKind, string> = {
   bug: "Ein Marienkäfer",
 };
 
-export function critterSVG(c: Critter): string {
+export function critterSVG(c: Pick<Critter, "kind" | "color">): string {
   const d = ' style="--d:-' + (Math.random() * 3).toFixed(2) + 's"';
   if (c.kind === "bee")
     return (

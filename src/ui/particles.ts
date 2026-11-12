@@ -1,10 +1,9 @@
-import { FLOWERS, flowerColor } from "../art/flowers";
-import { factors } from "../rules/garden";
+import { COLORS, flowerColor, varietyOf } from "../art/flowers";
 import { $, reduce } from "./dom";
 import { sess } from "./state";
 
 interface Particle {
-  kind: "drop" | "star" | "petal";
+  kind: "drop" | "star" | "petal" | "heart";
   x: number;
   y: number;
   vx: number;
@@ -40,6 +39,8 @@ function loop() {
   parts = parts.filter((p) => p.t < p.max);
   parts.forEach((p) => {
     p.t++;
+    // a heart waits for its turn
+    if (p.kind === "heart" && p.t < 0) return;
     if (p.kind === "drop") {
       p.vy += 0.35;
       p.y += p.vy;
@@ -70,6 +71,27 @@ function loop() {
           Math.sin((k * Math.PI) / 4) * rr,
         );
       }
+      c.fill();
+    } else if (p.kind === "heart") {
+      c.rotate(Math.sin(p.t * 0.08 + p.a) * 0.25);
+      c.beginPath();
+      c.moveTo(0, p.r * 0.9);
+      c.bezierCurveTo(
+        -p.r * 1.6,
+        -p.r * 0.2,
+        -p.r * 0.7,
+        -p.r * 1.3,
+        0,
+        -p.r * 0.45,
+      );
+      c.bezierCurveTo(
+        p.r * 0.7,
+        -p.r * 1.3,
+        p.r * 1.6,
+        -p.r * 0.2,
+        0,
+        p.r * 0.9,
+      );
       c.fill();
     } else {
       c.rotate(p.a);
@@ -106,7 +128,7 @@ export function flowerPoint() {
 
 export function sparkle(n: number) {
   const { x, y } = flowerPoint();
-  const petal = flowerColor(factors(sess.cur)[0]);
+  const petal = flowerColor(varietyOf(sess.cur));
   const sun = themeColor("--sun");
   addParts(
     Array.from({ length: n }, (_, i): Particle => {
@@ -129,6 +151,34 @@ export function sparkle(n: number) {
       };
     }),
   );
+}
+
+const HEART_COLORS = ["#FF6B8B", "#FF8FA3", "#E0457B", "#FFB4C4"];
+
+// Hearts rise from a point on the screen, one after the other.
+export function hearts(x: number, y: number, n: number, spread = 30) {
+  addParts(
+    Array.from({ length: n }, (_, i): Particle => ({
+      kind: "heart",
+      x: x + (Math.random() - 0.5) * spread,
+      y: y + (Math.random() - 0.5) * spread * 0.4,
+      vx: (Math.random() - 0.5) * 1.2,
+      vy: -1.1 - Math.random() * 0.9,
+      g: -0.012,
+      wob: 0.7,
+      r: Math.random() * 3 + 4.5,
+      c: HEART_COLORS[i % HEART_COLORS.length],
+      a: Math.random() * 6,
+      s: 0,
+      t: -i * 5,
+      max: 70 + Math.random() * 25,
+    })),
+  );
+}
+
+export function heartsFromFlower(n: number) {
+  const { x, y, w } = flowerPoint();
+  hearts(x, y, n, w * 0.8);
 }
 
 export function rainOnFlower() {
@@ -156,7 +206,7 @@ export function rainOnFlower() {
 export function confetti() {
   const W = innerWidth;
   const H = innerHeight;
-  const colors = FLOWERS.map((f) => f[0]).filter((c) => c !== "#FFFFFF");
+  const colors = COLORS.map((f) => f[0]).filter((c) => c !== "#FFFFFF");
   addParts(
     Array.from({ length: 80 }, (): Particle => ({
       kind: "petal",

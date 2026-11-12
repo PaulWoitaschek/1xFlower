@@ -1,6 +1,12 @@
 import { critterSVG } from "../art/critters";
 import { DECO, FENCE, sized } from "../art/deco";
-import { FLOWERS, flowerColor, flowerSVG, treeSVG } from "../art/flowers";
+import {
+  COLORS,
+  flowerColor,
+  flowerSVG,
+  treeSVG,
+  varietyOf,
+} from "../art/flowers";
 import {
   factors,
   keyOf,
@@ -9,6 +15,7 @@ import {
   type Critter,
 } from "../rules/garden";
 import { $, mk, reduce } from "./dom";
+import { initLife, tendLife } from "./life";
 import { flowerPoint } from "./particles";
 import { garden, sess, store } from "./state";
 
@@ -32,12 +39,13 @@ export function buildGarden() {
       const key = keyOf(a, b);
       const cell = mk("div", "cell " + stage(garden, key));
       cell.title = a + " × " + b;
-      cell.innerHTML = flowerSVG(a);
+      const variety = varietyOf(key);
+      cell.innerHTML = flowerSVG(variety);
       grid.appendChild(cell);
       cells[key] = cell;
       const dot = mk("i");
-      dot.style.cssText =
-        "--pc:" + FLOWERS[a - 1][0] + ";--cc:" + FLOWERS[a - 1][1];
+      const [petal, center] = COLORS[variety.color];
+      dot.style.cssText = "--pc:" + petal + ";--cc:" + center;
       map.appendChild(dot);
       mapCells[key] = dot;
     }
@@ -48,28 +56,7 @@ export function buildGarden() {
     grid.appendChild(tree);
     map.appendChild(mk("i", "t")).id = "mtree" + a;
   }
-}
-
-export function buildLegend() {
-  const items: [stage: string, name: string, row: number][] = [
-    ["u", "Samen", 1],
-    ["l1", "Keim", 1],
-    ["l3", "Knospe", 7],
-    ["l4", "Blüte", 2],
-    ["wilt", "Verwelkt", 6],
-  ];
-  $("legend").innerHTML = items
-    .map(
-      ([stage, name, row]) =>
-        '<span class="lg"><span class="lgf ' +
-        stage +
-        '">' +
-        flowerSVG(row) +
-        "</span>" +
-        name +
-        "</span>",
-    )
-    .join("");
+  initLife(cells);
 }
 
 function renderCritters(landed?: string) {
@@ -145,8 +132,12 @@ export function renderGarden() {
       st +
       off +
       (cur ? " cur" : "") +
-      (key === sess.bloom ? " bloomed" : "");
-    if (cells[key].className !== cls) cells[key].className = cls;
+      (key === sess.bloom ? " bloomed" : "") +
+      (sess.friends.includes(key) ? " hello" : "");
+    if (cells[key].className !== cls) {
+      cells[key].className = cls;
+      cells[key].style.setProperty("--i", String(sess.friends.indexOf(key)));
+    }
     const mapCls = st + off + (!cur ? "" : sess.grew ? " cur grew" : " cur");
     if (mapCells[key].className !== mapCls) mapCells[key].className = mapCls;
   }
@@ -166,6 +157,7 @@ export function renderGarden() {
   }
   renderCritters();
   renderYard();
+  tendLife();
   const critters = garden.critters.length;
   $("sBlooms").textContent = String(blooms);
   $("gCount").textContent =
@@ -242,7 +234,7 @@ export function flyToMap() {
   const { x, y } = flowerPoint();
   const to = dot.getBoundingClientRect();
   const el = mk("i", "seedfly");
-  el.style.background = flowerColor(factors(sess.cur)[0]);
+  el.style.background = flowerColor(varietyOf(sess.cur));
   document.body.appendChild(el);
   el.animate(
     [

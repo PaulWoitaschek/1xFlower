@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { gardenWith } from "./fixtures";
+import { gardenWith, row } from "./fixtures";
 import { freshGarden } from "./garden";
-import { pickNext, pool, weight, type Queue } from "./pick";
+import { nothingGrows, pickNext, pool, weight, type Queue } from "./pick";
 
 const DAY = 20_000;
 
@@ -108,5 +108,37 @@ describe("pickNext", () => {
     garden.rows = [2];
     const waiting = queue({ qn: 5, comeback: [{ key: "7x8", due: 5 }] });
     expect(pickNext(garden, waiting, DAY, () => 0)).toBe("2x1");
+  });
+});
+
+describe("nothingGrows", () => {
+  const restingRow = () => {
+    const garden = gardenWith({ ...row(3, 2), "3x9": 4, "3x10": 3 });
+    for (const fact of Object.values(garden.facts)) fact.grown = DAY;
+    garden.rows = [3];
+    return garden;
+  };
+
+  it("is true when each plant of the practiced rows rests or blooms", () => {
+    expect(nothingGrows(restingRow(), DAY)).toBe(true);
+  });
+
+  it("is false on a later day", () => {
+    expect(nothingGrows(restingRow(), DAY + 1)).toBe(false);
+  });
+
+  it("is false while a seed or a wilted plant is in the rows", () => {
+    const seed = restingRow();
+    delete seed.facts["3x5"];
+    expect(nothingGrows(seed, DAY)).toBe(false);
+    const wilted = restingRow();
+    wilted.facts["3x5"] = { ...wilted.facts["3x5"], lvl: 1, wilt: true };
+    expect(nothingGrows(wilted, DAY)).toBe(false);
+  });
+
+  it("is false when a new row is practiced too", () => {
+    const garden = restingRow();
+    garden.rows = [3, 4];
+    expect(nothingGrows(garden, DAY)).toBe(false);
   });
 });

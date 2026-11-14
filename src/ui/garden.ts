@@ -8,8 +8,10 @@ import {
   varietyOf,
 } from "../art/flowers";
 import {
+  dayOf,
   factors,
   keyOf,
+  rests,
   rowComplete,
   stage,
   type Critter,
@@ -122,6 +124,7 @@ function renderYard() {
 
 export function renderGarden() {
   let blooms = 0;
+  const today = dayOf(Date.now());
   for (const key in cells) {
     const st = stage(garden, key);
     const off = garden.rows.includes(factors(key)[0]) ? "" : " off";
@@ -132,6 +135,7 @@ export function renderGarden() {
       st +
       off +
       (cur ? " cur" : "") +
+      (rests(garden, key, today) ? " rest" : "") +
       (key === sess.bloom ? " bloomed" : "") +
       (sess.friends.includes(key) ? " hello" : "");
     if (cells[key].className !== cls) {

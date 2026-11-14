@@ -10,8 +10,10 @@ import {
   freshGarden,
   guests,
   keyOf,
+  rests,
   rowComplete,
   stage,
+  tomorrow,
 } from "./garden";
 
 describe("stage", () => {
@@ -145,5 +147,35 @@ describe("canGrow", () => {
 
   it("stops at the bloom", () => {
     expect(canGrow(plant(4, 0), 9)).toBe(false);
+  });
+});
+
+describe("rests and tomorrow", () => {
+  const DAY = 20_000;
+  // 1x1 is a sprout, 1x2 and 1x3 grew to the second level today, 1x4 to the
+  // bud today, 1x5 is a bud from yesterday, 1x6 blooms, 1x7 is wilted
+  const garden = gardenWith({
+    "1x1": 1,
+    "1x2": 2,
+    "1x3": 2,
+    "1x4": 3,
+    "1x5": 3,
+    "1x6": 4,
+    "1x7": 1,
+  });
+  for (const key of ["1x1", "1x2", "1x3", "1x4", "1x6", "1x7"])
+    garden.facts[key].grown = DAY;
+  garden.facts["1x5"].grown = DAY - 1;
+  garden.facts["1x7"].wilt = true;
+
+  it("finds the plants that must wait for a later day", () => {
+    const resting = allKeys().filter((key) => rests(garden, key, DAY));
+    expect(resting).toEqual(["1x2", "1x3", "1x4"]);
+    expect(allKeys().filter((key) => rests(garden, key, DAY + 1))).toEqual([]);
+  });
+
+  it("counts the buds and the blooms that can come tomorrow", () => {
+    expect(tomorrow(garden, DAY)).toEqual({ buds: 2, blooms: 1 });
+    expect(tomorrow(freshGarden(), DAY)).toEqual({ buds: 0, blooms: 0 });
   });
 });

@@ -9,9 +9,10 @@ import {
   factors,
   freshGarden,
   stage,
+  tomorrow,
 } from "../rules/garden";
 import { claimGifts, nextGift } from "../rules/gifts";
-import { pickNext } from "../rules/pick";
+import { nothingGrows, pickNext } from "../rules/pick";
 import { upgrade } from "../rules/storage";
 import { $, mk, reduce } from "./dom";
 import {
@@ -42,6 +43,8 @@ import { activeProfile, garden, save, sess, setGarden, store } from "./state";
 
 const PRAISE = ["Super!", "Klasse!", "Genau!", "Stark!", "Richtig!", "Spitze!"];
 
+const today = () => dayOf(Date.now());
+
 function setFb(cls: string, html: string) {
   const fb = $("fb");
   fb.className = "feedback " + cls;
@@ -54,7 +57,33 @@ function replay(el: HTMLElement, animation: string) {
   el.classList.add(animation);
 }
 
+// What the plants that rest today can bring tomorrow.
+function tomorrowText() {
+  const { buds, blooms } = tomorrow(garden, today());
+  const parts = [];
+  if (blooms) parts.push(blooms + (blooms === 1 ? " Blüte" : " Blüten"));
+  if (buds) parts.push(buds + (buds === 1 ? " Knospe" : " Knospen"));
+  if (!parts.length) return "";
+  return (
+    (buds + blooms === 1 ? "Morgen kann " : "Morgen können ") +
+    parts.join(" und ") +
+    " kommen!"
+  );
+}
+
+const MORE_ROWS = "Nimm im Garten eine Reihe dazu!";
+
 function hint() {
+  if (nothingGrows(garden, today())) {
+    const next = tomorrowText();
+    if (garden.rows.length < 10)
+      return (
+        '<span class="sub">In deinen Reihen wächst heute nichts mehr. ' +
+        MORE_ROWS +
+        "</span>"
+      );
+    if (next) return '<span class="sub">' + next + "</span>";
+  }
   const { gift, need } = nextGift(garden);
   if (need <= 0) return "";
   return (
@@ -74,7 +103,7 @@ function newTask() {
     return;
   }
   sess.qn++;
-  sess.cur = pickNext(garden, sess, dayOf(Date.now()));
+  sess.cur = pickNext(garden, sess, today());
   sess.input = "";
   sess.phase = "ask";
   sess.t0 = performance.now();
@@ -130,7 +159,7 @@ function submit() {
   }
 
   const fast = performance.now() - sess.t0 < 4000;
-  const result = answer(garden, sess, sess.cur, value, fast, dayOf(Date.now()));
+  const result = answer(garden, sess, sess.cur, value, fast, today());
   if (!result.right) {
     setFb(
       "bad",
@@ -196,7 +225,7 @@ function submit() {
           text: freshAgain
             ? "Wieder frisch!"
             : rest
-              ? "Ruht bis morgen"
+              ? "Gegossen!"
               : before === 4
                 ? "Blüht weiter!"
                 : "Wächst!",
@@ -225,6 +254,10 @@ function submit() {
     sfx("good");
     haptic("good");
     sparkle(14);
+    if (rest) {
+      rainOnFlower();
+      setTimeout(() => sfx("water"), 250);
+    }
     if (sess.streak % 5 === 0) {
       sfx("streak");
       if (!visitor) confetti();
@@ -328,6 +361,13 @@ function showSummary() {
       : "Dein Garten wächst. ") +
     bloomCount(garden) +
     " von 100 blühen.";
+  const next =
+    tomorrowText() +
+    (nothingGrows(garden, today()) && garden.rows.length < 10
+      ? " " + MORE_ROWS
+      : "");
+  $("sumNext").textContent = next.trim();
+  $("sumNext").hidden = !next.trim();
   const missed = $("sumMiss");
   missed.innerHTML = "";
   for (const key of round.missed) {

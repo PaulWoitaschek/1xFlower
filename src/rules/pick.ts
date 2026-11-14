@@ -27,6 +27,14 @@ export function weight(fact: Fact | undefined, today: number): number {
   return [7, 5, 3, 1.4][fact.lvl];
 }
 
+// No plant of the practiced rows can grow today: each one rests or blooms.
+export function nothingGrows(garden: Garden, today: number): boolean {
+  return pool(garden.rows).every((key) => {
+    const fact = garden.facts[key];
+    return !!fact && fact.seen > 0 && !canGrow(fact, today);
+  });
+}
+
 export function pickNext(
   garden: Garden,
   queue: Queue,

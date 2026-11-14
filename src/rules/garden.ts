@@ -79,6 +79,27 @@ export function canGrow(fact: Fact, today: number): boolean {
   return fact.lvl < 4 && today - fact.grown >= REST[fact.lvl];
 }
 
+// A plant rests when it grew today and must wait for a later day to grow again.
+export function rests(garden: Garden, key: string, today: number): boolean {
+  const fact = garden.facts[key];
+  return !!fact && fact.seen > 0 && fact.lvl < 4 && !canGrow(fact, today);
+}
+
+// The buds and the blooms that can come tomorrow, from the plants that rest today.
+export function tomorrow(
+  garden: Garden,
+  today: number,
+): { buds: number; blooms: number } {
+  let buds = 0;
+  let blooms = 0;
+  for (const [key, fact] of Object.entries(garden.facts)) {
+    if (!rests(garden, key, today) || !canGrow(fact, today + 1)) continue;
+    if (fact.lvl === 2) buds++;
+    else blooms++;
+  }
+  return { buds, blooms };
+}
+
 export function bloomCount(garden: Garden): number {
   return Object.keys(garden.facts).filter((key) => stage(garden, key) === "l4")
     .length;

@@ -2,9 +2,12 @@ import { store } from "./state";
 
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
+let music: GainNode | null = null;
 
-function audio(): AudioContext | null {
-  if (!store.sound) return null;
+const MUSIC_LEVEL = 0.35;
+
+/** the audio of the page, it may only start after the first tap */
+export function context(): AudioContext | null {
   try {
     if (!ac) {
       const Context =
@@ -15,12 +18,34 @@ function audio(): AudioContext | null {
       master = ac.createGain();
       master.gain.value = 0.8;
       master.connect(ac.destination);
+      music = ac.createGain();
+      music.gain.value = MUSIC_LEVEL;
+      music.connect(ac.destination);
     }
     if (ac.state === "suspended") ac.resume();
     return ac;
   } catch {
     return null;
   }
+}
+
+/** where the background music plays */
+export function musicOut(): GainNode | null {
+  return context() && music;
+}
+
+function audio(): AudioContext | null {
+  return store.sound ? context() : null;
+}
+
+// The music gets quieter for a moment, so that the sounds of the game stand out.
+function duck(t: number) {
+  const g = music!.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(MUSIC_LEVEL * 0.45, t + 0.05);
+  g.linearRampToValueAtTime(MUSIC_LEVEL * 0.45, t + 0.6);
+  g.linearRampToValueAtTime(MUSIC_LEVEL, t + 1.4);
 }
 
 interface ToneOptions {
@@ -113,11 +138,12 @@ const SFX = {
   },
 };
 
-// All sounds are synthesized, the game has no sound files.
+// All sounds and the music are synthesized, the game has no sound files.
 export function sfx(name: keyof typeof SFX) {
   const a = audio();
   if (!a) return;
   try {
+    if (name !== "tap" && name !== "del") duck(a.currentTime);
     SFX[name](a.currentTime + 0.01);
   } catch {}
 }

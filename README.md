@@ -19,7 +19,7 @@ You need Node.js. CI uses version 26.
 
 - `index.html` and `src/style.css` hold the markup and the styles.
 - `src/rules` holds the game rules. This code does not use the browser, and each rule has unit tests.
-- `src/art` holds the drawings.
+- `src/art` holds the drawings and the notes of the music.
 - `src/ui` shows the game and reads the input.
 - `e2e` holds the browser tests.
 

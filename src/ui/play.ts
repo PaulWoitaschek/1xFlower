@@ -38,6 +38,7 @@ import {
   openProfiles,
   updateWho,
 } from "./profiles";
+import { initMusic, syncMusic } from "./music";
 import { sfx } from "./sound";
 import { activeProfile, garden, save, sess, setGarden, store } from "./state";
 
@@ -336,6 +337,7 @@ function renderTask() {
   if (moment) hero.querySelector(".tag")!.textContent = moment.text;
 
   $("soundBtn").textContent = "Ton: " + (store.sound ? "an" : "aus");
+  $("musicBtn").textContent = "Musik: " + (store.music ? "an" : "aus");
   $("hapticBtn").textContent = "Vibration: " + (store.haptic ? "an" : "aus");
 }
 
@@ -473,6 +475,12 @@ export function start() {
     render();
     sfx("tap");
   };
+  $("musicBtn").onclick = () => {
+    store.music = !store.music;
+    save();
+    render();
+    syncMusic();
+  };
   $("hapticBtn").onclick = () => {
     store.haptic = !store.haptic;
     save();
@@ -492,6 +500,7 @@ export function start() {
   $("toPlay").onclick = () =>
     scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   initProfiles(activate);
+  initMusic();
 
   buildGarden();
   buildRows();

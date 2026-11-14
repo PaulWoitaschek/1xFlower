@@ -96,6 +96,7 @@ test("the third bloom brings a gift", async ({ page }) => {
   const store = {
     v: 2,
     sound: false,
+    music: false,
     haptic: false,
     active: "a",
     profiles: [{ id: "a", name: "Lena", flower: 3 }],
@@ -145,6 +146,7 @@ test("the blooms next to a new bloom greet it and a new bee comes", async ({
   const store = {
     v: 2,
     sound: false,
+    music: false,
     haptic: false,
     active: "a",
     profiles: [{ id: "a", name: "Lena", flower: 3 }],
@@ -183,6 +185,7 @@ test("a bud that grew today blooms only on a later day", async ({ page }) => {
   const store = {
     v: 2,
     sound: false,
+    music: false,
     haptic: false,
     active: "a",
     profiles: [{ id: "a", name: "Lena", flower: 3 }],
@@ -224,6 +227,7 @@ test("the summary tells what can come tomorrow", async ({ page }) => {
   const store = {
     v: 2,
     sound: false,
+    music: false,
     haptic: false,
     active: "a",
     profiles: [{ id: "a", name: "Lena", flower: 3 }],
@@ -248,4 +252,18 @@ test("the summary tells what can come tomorrow", async ({ page }) => {
   await expect(page.locator("#sumNext")).toHaveText(
     /^Morgen können? \d+ Blüten? kommen!/,
   );
+});
+
+test("the music switch remembers its choice", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await newProfile(page);
+  await answer(page);
+  const music = page.locator("#musicBtn");
+  await expect(music).toHaveText("Musik: an");
+  await music.click();
+  await expect(music).toHaveText("Musik: aus");
+  await page.reload();
+  await expect(page.locator("#musicBtn")).toHaveText("Musik: aus");
+  expect(errors).toEqual([]);
 });

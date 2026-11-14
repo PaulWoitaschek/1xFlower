@@ -1,4 +1,5 @@
-import { freshGarden, uid, type Garden } from "./garden";
+import { dayOf, freshGarden, uid, type Garden } from "./garden";
+import { stampBlooms } from "./thirst";
 
 export interface Profile {
   id: string;
@@ -20,10 +21,12 @@ const OLD_KEY = "einmaleins-garten-v1";
 
 // Gardens saved before the gifts and the visitors existed have no such fields.
 // Plants saved before the rest days existed may grow on the next answer.
-export function upgrade(garden: Garden): Garden {
+// Blooms saved before the thirst existed start it today.
+export function upgrade(garden: Garden, today = dayOf(Date.now())): Garden {
   garden.deco = garden.deco || [];
   garden.critters = garden.critters || [];
   for (const fact of Object.values(garden.facts)) fact.grown ??= 0;
+  stampBlooms(garden, today);
   return garden;
 }
 
@@ -67,6 +70,9 @@ export function saveStore(storage: Pick<Storage, "setItem">, store: Store) {
   } catch {}
 }
 
-export function activeGarden(store: Store): Garden {
-  return upgrade((store.active && store.data[store.active]) || freshGarden());
+export function activeGarden(store: Store, today = dayOf(Date.now())): Garden {
+  return upgrade(
+    (store.active && store.data[store.active]) || freshGarden(),
+    today,
+  );
 }

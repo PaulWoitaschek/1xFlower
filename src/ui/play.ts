@@ -14,6 +14,7 @@ import {
 import { claimGifts, nextGift } from "../rules/gifts";
 import { nothingGrows, pickNext } from "../rules/pick";
 import { upgrade } from "../rules/storage";
+import { thirsty, thirstyKeys, WATER_MIN, waterQueue } from "../rules/thirst";
 import { $, mk, reduce } from "./dom";
 import {
   buildGarden,
@@ -74,6 +75,9 @@ function tomorrowText() {
 const MORE_ROWS = "Nimm im Garten eine Reihe dazu!";
 
 function hint() {
+  if (thirsty(garden.facts[sess.cur], today())) {
+    return '<span class="sub">Diese Blume hat Durst. Weißt du es noch?</span>';
+  }
   if (nothingGrows(garden, today())) {
     const next = tomorrowText();
     if (garden.rows.length < 10)
@@ -97,8 +101,16 @@ function hint() {
   );
 }
 
+// Thirsty blooms come first: three or more get a short round of their own.
+function startRound() {
+  sess.water = waterQueue(garden, today());
+  const short = sess.water.length >= WATER_MIN;
+  sess.round = newRound(short ? sess.water.length : ROUND, short);
+  newTask();
+}
+
 function newTask() {
-  if (sess.round.n >= ROUND) {
+  if (sess.round.n >= sess.round.size) {
     showSummary();
     return;
   }
@@ -184,8 +196,17 @@ function submit() {
     return;
   }
 
-  const { points, before, bloom, rest, rowDone, freshAgain, gift, visitor } =
-    result;
+  const {
+    points,
+    before,
+    bloom,
+    rest,
+    rowDone,
+    freshAgain,
+    quenched,
+    gift,
+    visitor,
+  } = result;
   let sub = "+" + points + " Punkte" + (fast ? " (schnell!)" : "");
   if (rowDone) {
     sub = "Die " + a + "er-Reihe blüht! Ein Baum wächst.";
@@ -194,6 +215,7 @@ function submit() {
   else if (visitor)
     sub = CRITTER_NAMES[visitor.kind] + " zieht ein! (+" + points + ")";
   else if (bloom) sub = "Neue Blüte! " + sub;
+  else if (quenched) sub = "Sie bleibt jetzt länger frisch! (+" + points + ")";
   else if (rest)
     sub =
       (before === 3
@@ -224,7 +246,7 @@ function submit() {
           type: "good",
           text: freshAgain
             ? "Wieder frisch!"
-            : rest
+            : rest || quenched
               ? "Gegossen!"
               : before === 4
                 ? "Blüht weiter!"
@@ -254,7 +276,7 @@ function submit() {
     sfx("good");
     haptic("good");
     sparkle(14);
-    if (rest) {
+    if (rest || quenched) {
       rainOnFlower();
       setTimeout(() => sfx("water"), 250);
     }
@@ -303,12 +325,16 @@ function renderTask() {
   $("sMult").hidden = mult === 1;
   $("sMult").textContent = "×" + mult;
   $("bestText").textContent = "Beste Serie: " + garden.best;
-  const shown = Math.min(sess.round.n + (sess.phase === "ask" ? 1 : 0), ROUND);
+  const size = sess.round.size;
+  const shown = Math.min(sess.round.n + (sess.phase === "ask" ? 1 : 0), size);
   $("roundText").textContent =
-    "Aufgabe " + Math.max(shown, 1) + " von " + ROUND;
+    (sess.round.water ? "Gießrunde: Blume " : "Aufgabe ") +
+    Math.max(shown, 1) +
+    " von " +
+    size;
   const progress = $("progress");
   progress.innerHTML = "";
-  for (let i = 0; i < ROUND; i++) {
+  for (let i = 0; i < size; i++) {
     const now = i === sess.round.n && sess.phase === "ask";
     progress.appendChild(mk("i", sess.round.marks[i] || (now ? "now" : null)));
   }
@@ -318,6 +344,7 @@ function renderTask() {
   hero.className =
     "hero " +
     stage(garden, sess.cur) +
+    (thirsty(garden.facts[sess.cur], today()) ? " thirsty" : "") +
     (sess.bloom === sess.cur ? " bloomed" : "") +
     (moment ? " moment m-" + moment.type : "");
   if (sess.heroKey !== sess.cur) {
@@ -347,18 +374,31 @@ function render() {
 
 function showSummary() {
   const round = sess.round;
-  $("sumScore").innerHTML = round.right + "<small> / " + ROUND + "</small>";
-  $("sumTitle").textContent =
-    round.right === ROUND
+  const good = round.right >= round.size * 0.8;
+  $("sumScore").innerHTML =
+    round.right + "<small> / " + round.size + "</small>";
+  $("sumTitle").textContent = round.water
+    ? round.right === round.size
+      ? "Alle gegossen!"
+      : "Gießrunde geschafft!"
+    : round.right === round.size
       ? "Alles richtig!"
-      : round.right >= 16
+      : good
         ? "Toll gemacht!"
         : "Runde geschafft!";
   $("sumPoints").textContent = "+" + round.points + " Punkte in dieser Runde";
+  const dry = thirstyKeys(garden, today()).length;
   $("sumGarden").textContent =
-    (round.blooms
-      ? round.blooms + (round.blooms === 1 ? " neue Blüte! " : " neue Blüten! ")
-      : "Dein Garten wächst. ") +
+    (round.water
+      ? dry
+        ? "Noch " +
+          dry +
+          (dry === 1 ? " Blume hat Durst. " : " Blumen haben Durst. ")
+        : "Keine Blume hat mehr Durst. "
+      : round.blooms
+        ? round.blooms +
+          (round.blooms === 1 ? " neue Blüte! " : " neue Blüten! ")
+        : "Dein Garten wächst. ") +
     bloomCount(garden) +
     " von 100 blühen.";
   const next =
@@ -375,9 +415,9 @@ function showSummary() {
   }
   $("sumMissWrap").hidden = !round.missed.length;
   $("summary").hidden = false;
-  sfx(round.right >= 16 ? "fanfare" : "done");
+  sfx(good ? "fanfare" : "done");
   haptic("bloom");
-  if (round.right >= 16) confetti();
+  if (good) confetti();
   $("again").focus();
 }
 
@@ -419,9 +459,8 @@ function resetIdle() {
       save();
       sess.streak = 0;
       sess.comeback = [];
-      sess.round = newRound();
       resetIdle();
-      newTask();
+      startRound();
     };
     $("resetNo").onclick = resetIdle;
   };
@@ -436,11 +475,10 @@ function activate(id: string) {
   sess.comeback = [];
   sess.last = null;
   sess.heroKey = null;
-  sess.round = newRound();
   buildRows();
   resetIdle();
   updateWho();
-  newTask();
+  startRound();
 }
 
 export function start() {
@@ -481,8 +519,7 @@ export function start() {
   };
   $("again").onclick = () => {
     $("summary").hidden = true;
-    sess.round = newRound();
-    newTask();
+    startRound();
   };
   $("toGarden").onclick = () => {
     $("again").click();
@@ -498,6 +535,6 @@ export function start() {
   resetIdle();
   updateWho();
   claimGifts(garden);
-  newTask();
+  startRound();
   if (!activeProfile() || store.profiles.length > 1) openProfiles();
 }

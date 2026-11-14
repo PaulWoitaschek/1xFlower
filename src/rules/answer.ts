@@ -8,11 +8,16 @@ import {
 } from "./garden";
 import { claimGifts } from "./gifts";
 import type { Queue } from "./pick";
+import { water } from "./thirst";
 import { newVisitor } from "./visitors";
 
 export const ROUND = 20;
 
 export interface Round {
+  /** number of tasks */
+  size: number;
+  /** a short round that asks only thirsty blooms */
+  water: boolean;
   n: number;
   right: number;
   points: number;
@@ -21,7 +26,9 @@ export interface Round {
   missed: string[];
 }
 
-export const newRound = (): Round => ({
+export const newRound = (size = ROUND, water = false): Round => ({
+  size,
+  water,
   n: 0,
   right: 0,
   points: 0,
@@ -50,6 +57,8 @@ export interface Right {
   rowDone: boolean;
   /** a wilted plant is green again */
   freshAgain: boolean;
+  /** a thirsty bloom got its water */
+  quenched: boolean;
   gift: Deco | null;
   visitor: Critter | null;
 }
@@ -112,6 +121,7 @@ export function answer(
   play.round.marks.push("ok");
   const bloom = before === 3 && fact.lvl === 4;
   if (bloom) play.round.blooms++;
+  const quenched = fact.lvl === 4 && water(fact, today, bloom);
   return {
     right: true,
     points,
@@ -121,6 +131,7 @@ export function answer(
     rest: !grows && before < 4,
     rowDone: bloom && rowComplete(garden, a),
     freshAgain: wasWilt && !fact.wilt,
+    quenched,
     gift: bloom ? claimGifts(garden) : null,
     visitor: play.streak % 5 === 0 ? newVisitor(garden, random) : null,
   };

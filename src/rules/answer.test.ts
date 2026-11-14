@@ -9,6 +9,7 @@ const play = (changes: Partial<Play> = {}): Play => ({
   qn: 1,
   last: null,
   comeback: [],
+  water: [],
   streak: 0,
   round: newRound(),
   ...changes,
@@ -33,6 +34,8 @@ describe("a right answer", () => {
     expect(state.streak).toBe(1);
     expect(state.last).toBe("7x8");
     expect(state.round).toEqual({
+      size: 20,
+      water: false,
       n: 1,
       right: 1,
       points: 10,
@@ -176,6 +179,53 @@ describe("the rest days", () => {
       freshAgain: true,
     });
     expect(stage(garden, "7x8")).toBe("l2");
+  });
+});
+
+describe("a right answer for a bloom", () => {
+  it("starts the thirst with the bloom", () => {
+    const garden = gardenWith({ "7x8": 3 });
+    const result = answer(garden, play(), "7x8", 56, false, DAY);
+    expect(result).toMatchObject({ bloom: true, quenched: false });
+    expect(garden.facts["7x8"]).toMatchObject({ watered: DAY, gap: 0 });
+  });
+
+  it("waters a thirsty bloom, which then stays fresh for longer", () => {
+    const garden = gardenWith({ "7x8": 4 });
+    Object.assign(garden.facts["7x8"], { watered: DAY, gap: 0 });
+    const result = answer(garden, play(), "7x8", 56, false, DAY + 1);
+    expect(result).toMatchObject({ quenched: true, bloom: false, rest: false });
+    expect(garden.facts["7x8"]).toMatchObject({ watered: DAY + 1, gap: 1 });
+  });
+
+  it("does not make a fresh bloom stay fresh for longer", () => {
+    const garden = gardenWith({ "7x8": 4 });
+    Object.assign(garden.facts["7x8"], { watered: DAY, gap: 1 });
+    const result = answer(garden, play(), "7x8", 56, false, DAY + 1);
+    expect(result).toMatchObject({ quenched: false });
+    expect(garden.facts["7x8"]).toMatchObject({ watered: DAY + 1, gap: 1 });
+  });
+
+  it("does not start the thirst before the bloom", () => {
+    const garden = freshGarden();
+    answer(garden, play(), "7x8", 56, false, DAY);
+    expect(garden.facts["7x8"].watered).toBeUndefined();
+  });
+
+  it("starts with the shortest time again after a wrong answer", () => {
+    const garden = gardenWith({ "7x8": 4 });
+    Object.assign(garden.facts["7x8"], { watered: DAY, gap: 3 });
+    const state = play();
+    answer(garden, state, "7x8", 54, false, DAY + 14);
+    for (let day = 14; day <= 16; day++) {
+      answer(garden, state, "7x8", 56, false, DAY + day);
+      answer(garden, state, "7x8", 56, false, DAY + day);
+    }
+    expect(garden.facts["7x8"]).toMatchObject({
+      lvl: 4,
+      watered: DAY + 16,
+      gap: 0,
+    });
   });
 });
 

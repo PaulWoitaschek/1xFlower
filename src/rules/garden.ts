@@ -6,6 +6,10 @@ export interface Fact {
   wilt: boolean;
   /** the day on which the plant last grew, see dayOf */
   grown: number;
+  /** the day of the last right answer for the bloom, see dayOf */
+  watered?: number;
+  /** index into the days a bloom stays fresh */
+  gap?: number;
 }
 
 export type CritterKind = "bfly" | "bee" | "bug";

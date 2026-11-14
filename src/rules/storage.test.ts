@@ -78,9 +78,11 @@ describe("loadStore", () => {
     expect(store.sound).toBe(false);
     expect(store.music).toBe(false);
     expect(store.haptic).toBe(true);
-    expect(activeGarden(store)).toEqual({
+    const facts = structuredClone(old.facts);
+    Object.assign(facts["7x8"], { watered: 20_000, gap: 0 });
+    expect(activeGarden(store, 20_000)).toEqual({
       ...freshGarden(),
-      facts: old.facts,
+      facts,
       points: 250,
       best: 9,
       rows: [2, 7],
@@ -101,6 +103,22 @@ describe("loadStore", () => {
       }),
     );
     expect(store).toEqual(saved);
+  });
+});
+
+describe("blooms from before the thirst existed", () => {
+  it("start the thirst on the day of the upgrade", () => {
+    const store = loadStore(disk());
+    store.data.a = gardenWith({ "7x8": 4, "2x2": 3 });
+    store.active = "a";
+    const garden = activeGarden(store, 20_000);
+    expect(garden.facts["7x8"]).toMatchObject({ watered: 20_000, gap: 0 });
+    expect(garden.facts["2x2"].watered).toBeUndefined();
+    garden.facts["7x8"].gap = 2;
+    expect(activeGarden(store, 20_005).facts["7x8"]).toMatchObject({
+      watered: 20_000,
+      gap: 2,
+    });
   });
 });
 

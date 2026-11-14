@@ -52,6 +52,7 @@ export const sess: Session = {
   streak: 0,
   qn: 0,
   comeback: [],
+  water: [],
   last: null,
   round: newRound(),
   cur: "",

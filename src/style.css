@@ -412,6 +412,20 @@ button:focus-visible {
 .cell.off {
   opacity: 0.3;
 }
+/* a drop of water on a plant that rests until tomorrow */
+.cell.rest::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 52%;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 0 50% 50% 50%;
+  rotate: 45deg;
+  background: var(--rain);
+  box-shadow: inset -1px -1px 0 color-mix(in srgb, #fff 45%, transparent);
+  pointer-events: none;
+}
 /* a new bloom glows, and the blooms next to it hop to greet it */
 .cell.bloomed::after {
   content: "";
@@ -1317,6 +1331,10 @@ button:focus-visible {
   margin: 0;
   color: var(--muted);
   font-weight: 600;
+}
+.sheet .sum-next {
+  color: var(--leaf);
+  font-weight: 800;
 }
 .misses {
   display: flex;

@@ -4,12 +4,16 @@ import {
   allKeys,
   bloomCount,
   bloomingNeighbours,
+  canGrow,
+  dayOf,
   factors,
   freshGarden,
   guests,
   keyOf,
+  rests,
   rowComplete,
   stage,
+  tomorrow,
 } from "./garden";
 
 describe("stage", () => {
@@ -97,5 +101,81 @@ describe("guests", () => {
   it("brings more guests with more blooms, up to a limit", () => {
     expect(guests(8)).toEqual({ bees: 2, butterflies: 1 });
     expect(guests(100)).toEqual({ bees: 6, butterflies: 4 });
+  });
+});
+
+describe("dayOf", () => {
+  const at = (...parts: [number, number, number, number, number]) =>
+    dayOf(new Date(...parts).getTime());
+
+  it("is the same from the morning to the night", () => {
+    expect(at(2026, 10, 14, 0, 0)).toBe(at(2026, 10, 14, 23, 59));
+  });
+
+  it("counts up by one at midnight", () => {
+    expect(at(2026, 10, 15, 0, 0) - at(2026, 10, 14, 23, 59)).toBe(1);
+    expect(at(2026, 11, 1, 8, 0) - at(2026, 10, 30, 20, 0)).toBe(1);
+  });
+
+  it("counts whole days across a change of the clock", () => {
+    expect(at(2026, 2, 30, 12, 0) - at(2026, 2, 28, 12, 0)).toBe(2);
+    expect(at(2026, 9, 26, 0, 30) - at(2026, 9, 24, 23, 30)).toBe(2);
+  });
+});
+
+describe("canGrow", () => {
+  const plant = (lvl: number, grown: number) => ({
+    lvl,
+    seen: lvl,
+    right: lvl,
+    wrong: 0,
+    wilt: false,
+    grown,
+  });
+
+  it("lets a sprout grow on the same day", () => {
+    expect(canGrow(plant(0, 9), 9)).toBe(true);
+    expect(canGrow(plant(1, 9), 9)).toBe(true);
+  });
+
+  it("brings the bud and the bloom only on a later day", () => {
+    expect(canGrow(plant(2, 9), 9)).toBe(false);
+    expect(canGrow(plant(2, 9), 10)).toBe(true);
+    expect(canGrow(plant(3, 9), 9)).toBe(false);
+    expect(canGrow(plant(3, 9), 10)).toBe(true);
+  });
+
+  it("stops at the bloom", () => {
+    expect(canGrow(plant(4, 0), 9)).toBe(false);
+  });
+});
+
+describe("rests and tomorrow", () => {
+  const DAY = 20_000;
+  // 1x1 is a sprout, 1x2 and 1x3 grew to the second level today, 1x4 to the
+  // bud today, 1x5 is a bud from yesterday, 1x6 blooms, 1x7 is wilted
+  const garden = gardenWith({
+    "1x1": 1,
+    "1x2": 2,
+    "1x3": 2,
+    "1x4": 3,
+    "1x5": 3,
+    "1x6": 4,
+    "1x7": 1,
+  });
+  for (const key of ["1x1", "1x2", "1x3", "1x4", "1x6", "1x7"])
+    garden.facts[key].grown = DAY;
+  garden.facts["1x5"].grown = DAY - 1;
+  garden.facts["1x7"].wilt = true;
+
+  it("finds the plants that must wait for a later day", () => {
+    const resting = allKeys().filter((key) => rests(garden, key, DAY));
+    expect(resting).toEqual(["1x2", "1x3", "1x4"]);
+    expect(allKeys().filter((key) => rests(garden, key, DAY + 1))).toEqual([]);
+  });
+
+  it("counts the buds and the blooms that can come tomorrow", () => {
+    expect(tomorrow(garden, DAY)).toEqual({ buds: 2, blooms: 1 });
+    expect(tomorrow(freshGarden(), DAY)).toEqual({ buds: 0, blooms: 0 });
   });
 });

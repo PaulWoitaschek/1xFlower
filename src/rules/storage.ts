@@ -18,10 +18,12 @@ export interface Store {
 const KEY = "einmaleins-garten-v2";
 const OLD_KEY = "einmaleins-garten-v1";
 
-// gardens saved before the gifts and the visitors existed have no such fields
+// Gardens saved before the gifts and the visitors existed have no such fields.
+// Plants saved before the rest days existed may grow on the next answer.
 export function upgrade(garden: Garden): Garden {
   garden.deco = garden.deco || [];
   garden.critters = garden.critters || [];
+  for (const fact of Object.values(garden.facts)) fact.grown ??= 0;
   return garden;
 }
 

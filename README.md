@@ -1,6 +1,6 @@
 # Einmaleins-Garten
 
-A game to practice the multiplication tables. Each task is a plant in a garden, and each right answer makes its plant grow.
+A game to practice the multiplication tables. Each task is a plant in a garden, and each right answer makes its plant grow. The bud and the bloom each come only on a later day, so a plant blooms only when the child still knows its task on other days.
 
 Play it at https://1xflower.woitaschek.de/.
 

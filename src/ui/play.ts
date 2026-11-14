@@ -5,6 +5,7 @@ import { answer, multiplier, newRound, ROUND } from "../rules/answer";
 import {
   bloomCount,
   bloomingNeighbours,
+  dayOf,
   factors,
   freshGarden,
   stage,
@@ -73,7 +74,7 @@ function newTask() {
     return;
   }
   sess.qn++;
-  sess.cur = pickNext(garden, sess);
+  sess.cur = pickNext(garden, sess, dayOf(Date.now()));
   sess.input = "";
   sess.phase = "ask";
   sess.t0 = performance.now();
@@ -129,7 +130,7 @@ function submit() {
   }
 
   const fast = performance.now() - sess.t0 < 4000;
-  const result = answer(garden, sess, sess.cur, value, fast);
+  const result = answer(garden, sess, sess.cur, value, fast, dayOf(Date.now()));
   if (!result.right) {
     setFb(
       "bad",
@@ -154,7 +155,8 @@ function submit() {
     return;
   }
 
-  const { points, before, bloom, rowDone, freshAgain, gift, visitor } = result;
+  const { points, before, bloom, rest, rowDone, freshAgain, gift, visitor } =
+    result;
   let sub = "+" + points + " Punkte" + (fast ? " (schnell!)" : "");
   if (rowDone) {
     sub = "Die " + a + "er-Reihe blüht! Ein Baum wächst.";
@@ -163,6 +165,14 @@ function submit() {
   else if (visitor)
     sub = CRITTER_NAMES[visitor.kind] + " zieht ein! (+" + points + ")";
   else if (bloom) sub = "Neue Blüte! " + sub;
+  else if (rest)
+    sub =
+      (before === 3
+        ? "Morgen kann sie blühen!"
+        : "Morgen kann eine Knospe wachsen!") +
+      " (+" +
+      points +
+      ")";
   if (bloom) {
     sess.bloom = sess.cur;
     sess.friends = bloomingNeighbours(garden, sess.cur);
@@ -185,11 +195,13 @@ function submit() {
           type: "good",
           text: freshAgain
             ? "Wieder frisch!"
-            : before === 4
-              ? "Blüht weiter!"
-              : "Wächst!",
+            : rest
+              ? "Ruht bis morgen"
+              : before === 4
+                ? "Blüht weiter!"
+                : "Wächst!",
         };
-  sess.grew = true;
+  sess.grew = !rest;
   save();
   // Before the render, so that the visitor does not show on its plant during the flight.
   if (visitor) flyCritter(visitor);

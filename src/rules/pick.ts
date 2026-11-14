@@ -1,4 +1,4 @@
-import { keyOf, type Fact, type Garden } from "./garden";
+import { canGrow, keyOf, type Fact, type Garden } from "./garden";
 
 export interface Comeback {
   key: string;
@@ -19,16 +19,18 @@ export function pool(rows: number[]): string[] {
   return keys;
 }
 
-// errors come back often, mastered facts rarely
-export function weight(fact: Fact | undefined): number {
+// Errors come back often. Mastered facts and plants that can not grow today come rarely.
+export function weight(fact: Fact | undefined, today: number): number {
   if (!fact || !fact.seen) return 2.5;
   if (fact.wilt) return 12 + Math.min(fact.wrong, 5) * 2;
-  return [7, 5, 3, 1.4, 0.5][fact.lvl];
+  if (!canGrow(fact, today)) return 0.5;
+  return [7, 5, 3, 1.4][fact.lvl];
 }
 
 export function pickNext(
   garden: Garden,
   queue: Queue,
+  today: number,
   random = Math.random,
 ): string {
   const keys = pool(garden.rows);
@@ -39,7 +41,9 @@ export function pickNext(
   let total = 0;
   const weights = keys.map((key) => {
     const w =
-      key === queue.last && keys.length > 1 ? 0 : weight(garden.facts[key]);
+      key === queue.last && keys.length > 1
+        ? 0
+        : weight(garden.facts[key], today);
     total += w;
     return w;
   });

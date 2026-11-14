@@ -1,5 +1,11 @@
 import type { Deco } from "../art/deco";
-import { factors, rowComplete, type Critter, type Garden } from "./garden";
+import {
+  canGrow,
+  factors,
+  rowComplete,
+  type Critter,
+  type Garden,
+} from "./garden";
 import { claimGifts } from "./gifts";
 import type { Queue } from "./pick";
 import { newVisitor } from "./visitors";
@@ -39,6 +45,8 @@ export interface Right {
   /** level of the plant before this answer */
   before: number;
   bloom: boolean;
+  /** the plant did not grow, it rests until a later day */
+  rest: boolean;
   rowDone: boolean;
   /** a wilted plant is green again */
   freshAgain: boolean;
@@ -51,12 +59,14 @@ export interface Wrong {
 }
 
 // The first answer to a task. It changes the garden and the play state.
+// today is the day of the answer, see dayOf.
 export function answer(
   garden: Garden,
   play: Play,
   key: string,
   value: number,
   fast: boolean,
+  today: number,
   random = Math.random,
 ): Right | Wrong {
   const [a, b] = factors(key);
@@ -66,6 +76,7 @@ export function answer(
     right: 0,
     wrong: 0,
     wilt: false,
+    grown: 0,
   });
   fact.seen++;
   play.round.n++;
@@ -85,8 +96,12 @@ export function answer(
 
   const before = fact.lvl;
   const wasWilt = fact.wilt;
+  const grows = canGrow(fact, today);
   fact.right++;
-  fact.lvl = Math.min(4, fact.lvl + 1);
+  if (grows) {
+    fact.lvl++;
+    fact.grown = today;
+  }
   if (fact.lvl >= 2) fact.wilt = false;
   play.streak++;
   garden.best = Math.max(garden.best, play.streak);
@@ -103,6 +118,7 @@ export function answer(
     fast,
     before,
     bloom,
+    rest: !grows && before < 4,
     rowDone: bloom && rowComplete(garden, a),
     freshAgain: wasWilt && !fact.wilt,
     gift: bloom ? claimGifts(garden) : null,

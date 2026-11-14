@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dayOf } from "../src/rules/garden";
 
 async function newProfile(page: Page) {
   await page.goto("/");
@@ -164,4 +165,48 @@ test("the blooms next to a new bloom greet it and a new bee comes", async ({
   await expect(gardenPlant(page, a + 1, b)).toHaveClass(/hello/);
   await expect(page.locator("#life .guest.bee")).toHaveCount(5);
   await expect(page.locator(".flyer").first()).toBeAttached();
+});
+
+test("a bud that grew today blooms only on a later day", async ({ page }) => {
+  const today = new Date(2026, 10, 14, 16, 0);
+  await page.clock.install({ time: today });
+  const bud = {
+    lvl: 3,
+    seen: 3,
+    right: 3,
+    wrong: 0,
+    wilt: false,
+    grown: dayOf(today.getTime()),
+  };
+  const facts: Record<string, typeof bud> = {};
+  for (let b = 1; b <= 10; b++) facts[`3x${b}`] = bud;
+  const store = {
+    v: 2,
+    sound: false,
+    haptic: false,
+    active: "a",
+    profiles: [{ id: "a", name: "Lena", flower: 3 }],
+    data: {
+      a: { facts, points: 0, best: 0, rows: [3], deco: [], critters: [] },
+    },
+  };
+  await page.addInitScript((saved) => {
+    localStorage.setItem("einmaleins-garten-v2", saved);
+  }, JSON.stringify(store));
+  await page.goto("/");
+
+  const first = await answer(page);
+
+  await expect(page.locator("#fb")).toContainText("Morgen kann sie blühen!");
+  await expect(page.locator("#hero .tag")).toHaveText("Ruht bis morgen");
+  await expect(gardenPlant(page, first.a, first.b)).toHaveClass(/\bl3\b/);
+  await expect(page.locator("#mapCap")).toHaveText("0 von 100 blühen");
+
+  await page.clock.runFor(3000);
+  await page.clock.setSystemTime(new Date(2026, 10, 15, 16, 0));
+  const second = await answer(page);
+
+  await expect(page.locator("#fb")).toContainText("Neue Blüte!");
+  await expect(gardenPlant(page, second.a, second.b)).toHaveClass(/\bl4\b/);
+  await expect(page.locator("#mapCap")).toHaveText("1 von 100 blühen");
 });

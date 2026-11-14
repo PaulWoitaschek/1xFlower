@@ -4,6 +4,8 @@ export interface Fact {
   right: number;
   wrong: number;
   wilt: boolean;
+  /** the day on which the plant last grew, see dayOf */
+  grown: number;
 }
 
 export type CritterKind = "bfly" | "bee" | "bug";
@@ -56,6 +58,25 @@ export function stage(garden: Garden, key: string): Stage {
   const fact = garden.facts[key];
   if (!fact || !fact.seen) return "u";
   return fact.wilt ? "wilt" : (("l" + fact.lvl) as Stage);
+}
+
+// The number of the calendar day in the local time zone.
+export function dayOf(time: number): number {
+  const date = new Date(time);
+  const midnight = Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  return Math.round(midnight / 86_400_000);
+}
+
+// The days that a plant rests after it grew to a level. Short practice can not
+// make a plant bloom: the bud and the bloom each come on a later day.
+const REST = [0, 0, 1, 1];
+
+export function canGrow(fact: Fact, today: number): boolean {
+  return fact.lvl < 4 && today - fact.grown >= REST[fact.lvl];
 }
 
 export function bloomCount(garden: Garden): number {

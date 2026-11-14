@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gardenWith } from "./fixtures";
-import { freshGarden, type Garden } from "./garden";
+import { freshGarden, type Fact, type Garden } from "./garden";
 import { activeGarden, loadStore, saveStore, type Store } from "./storage";
 
 const V2 = "einmaleins-garten-v2";
@@ -113,5 +113,14 @@ describe("activeGarden", () => {
     expect(garden.deco).toEqual(deco);
     expect(garden.critters).toEqual(critters);
     expect(garden.facts["7x8"].lvl).toBe(4);
+  });
+
+  it("lets plants from before the rest days grow on the next answer", () => {
+    const store = loadStore(disk());
+    const old = gardenWith({ "7x8": 3 });
+    delete (old.facts["7x8"] as Partial<Fact>).grown;
+    store.data.a = old;
+    store.active = "a";
+    expect(activeGarden(store).facts["7x8"].grown).toBe(0);
   });
 });

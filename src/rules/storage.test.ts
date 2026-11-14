@@ -31,6 +31,16 @@ describe("loadStore", () => {
     expect(store.profiles).toEqual([]);
     expect(store.active).toBeNull();
     expect(store.sound).toBe(true);
+    expect(store.music).toBe(true);
+  });
+
+  it("plays music for stores saved before the music, if their sounds are on", () => {
+    const { music: _, ...withSound } = loadStore(disk());
+    const read = (saved: object) =>
+      loadStore(disk({ [V2]: JSON.stringify(saved) })).music;
+    expect(read(withSound)).toBe(true);
+    expect(read({ ...withSound, sound: false })).toBe(false);
+    expect(read({ ...withSound, sound: false, music: true })).toBe(true);
   });
 
   it("reads back what saveStore wrote", () => {
@@ -66,6 +76,7 @@ describe("loadStore", () => {
     expect(store.profiles[0].name).toBe("Spieler 1");
     expect(store.active).toBe(store.profiles[0].id);
     expect(store.sound).toBe(false);
+    expect(store.music).toBe(false);
     expect(store.haptic).toBe(true);
     const facts = structuredClone(old.facts);
     Object.assign(facts["7x8"], { watered: 20_000, gap: 0 });

@@ -10,6 +10,7 @@ export interface Profile {
 export interface Store {
   v: 2;
   sound: boolean;
+  music: boolean;
   haptic: boolean;
   active: string | null;
   profiles: Profile[];
@@ -33,11 +34,16 @@ export function upgrade(garden: Garden, today = dayOf(Date.now())): Garden {
 export function loadStore(storage: Pick<Storage, "getItem">): Store {
   try {
     const saved = JSON.parse(storage.getItem(KEY) || "null");
-    if (saved && Array.isArray(saved.profiles) && saved.data) return saved;
+    if (saved && Array.isArray(saved.profiles) && saved.data) {
+      // Stores saved before the music existed: music only if the sounds are on.
+      saved.music ??= saved.sound !== false;
+      return saved;
+    }
   } catch {}
   const store: Store = {
     v: 2,
     sound: true,
+    music: true,
     haptic: true,
     active: null,
     profiles: [],
@@ -57,7 +63,7 @@ export function loadStore(storage: Pick<Storage, "getItem">): Store {
         rows: old.rows || freshGarden().rows,
       };
       store.active = id;
-      if (old.sound === false) store.sound = false;
+      if (old.sound === false) store.sound = store.music = false;
       if (old.haptic === false) store.haptic = false;
     }
   } catch {}

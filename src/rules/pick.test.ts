@@ -9,6 +9,7 @@ const queue = (changes: Partial<Queue> = {}): Queue => ({
   qn: 1,
   last: null,
   comeback: [],
+  water: [],
   ...changes,
 });
 
@@ -101,6 +102,26 @@ describe("pickNext", () => {
     });
     expect(pickNext(garden, waiting, DAY, () => 0)).toBe("1x1");
     expect(waiting.comeback).toHaveLength(1);
+  });
+
+  it("asks the thirsty blooms before all other tasks", () => {
+    const garden = freshGarden();
+    const waiting = queue({
+      qn: 5,
+      water: ["3x4", "9x9"],
+      comeback: [{ key: "7x8", due: 5 }],
+    });
+    expect(pickNext(garden, waiting, DAY, () => 0)).toBe("3x4");
+    expect(pickNext(garden, waiting, DAY, () => 0)).toBe("9x9");
+    expect(pickNext(garden, waiting, DAY, () => 0)).toBe("7x8");
+  });
+
+  it("skips a thirsty bloom when its row is not practiced", () => {
+    const garden = freshGarden();
+    garden.rows = [9];
+    const waiting = queue({ water: ["3x4", "9x9"] });
+    expect(pickNext(garden, waiting, DAY, () => 0)).toBe("9x9");
+    expect(waiting.water).toEqual([]);
   });
 
   it("holds a due task back when its row is not practiced", () => {

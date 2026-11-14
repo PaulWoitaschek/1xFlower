@@ -869,6 +869,20 @@ button:focus-visible {
 .wilt .fl .sway {
   animation: none;
 }
+/* a thirsty bloom hangs its pale head until a right answer waters it */
+.thirsty .fl .wiltg {
+  transform: rotate(6deg);
+}
+.thirsty .fl .head {
+  transform: translate(4.5px, 3px) rotate(28deg);
+}
+.thirsty .fl .petals,
+.thirsty .fl .center {
+  filter: saturate(0.5);
+}
+.thirsty .fl .sway {
+  animation: none;
+}
 .bloomed .fl .petals {
   animation: bloom 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1168,6 +1182,9 @@ button:focus-visible {
   background: radial-gradient(circle, var(--cc) 0 30%, var(--pc) 34%);
   opacity: 1;
   box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+.map .thirsty::before {
+  box-shadow: 0 0 0 1.5px var(--dry);
 }
 .map .wilt::before {
   width: 6px;

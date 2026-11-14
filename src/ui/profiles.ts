@@ -1,5 +1,6 @@
 import { avatarVariety, flowerSVG } from "../art/flowers";
-import { bloomCount, freshGarden, uid } from "../rules/garden";
+import { bloomCount, dayOf, freshGarden, uid } from "../rules/garden";
+import { thirstyKeys } from "../rules/thirst";
 import { $, mk } from "./dom";
 import { haptic } from "./haptics";
 import { sfx } from "./sound";
@@ -62,9 +63,16 @@ function renderProfiles() {
     if (!view.edit) {
       const button = mk("button", "pbtn");
       const text = mk("span", "ptxt");
+      const dry = thirstyKeys(store.data[p.id], dayOf(Date.now())).length;
       text.append(
         mk("span", "pname", p.name),
-        mk("span", "pmeta", bloomCount(store.data[p.id]) + " Blüten"),
+        mk(
+          "span",
+          "pmeta",
+          bloomCount(store.data[p.id]) +
+            " Blüten" +
+            (dry ? " · " + dry + " durstig" : ""),
+        ),
       );
       button.append(avatar(p.flower), text);
       button.onclick = () => {

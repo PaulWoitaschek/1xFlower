@@ -16,6 +16,7 @@ import {
   stage,
   type Critter,
 } from "../rules/garden";
+import { thirstyKeys } from "../rules/thirst";
 import { $, mk, reduce } from "./dom";
 import { initLife, tendLife } from "./life";
 import { flowerPoint } from "./particles";
@@ -125,14 +126,17 @@ function renderYard() {
 export function renderGarden() {
   let blooms = 0;
   const today = dayOf(Date.now());
+  const dry = new Set(thirstyKeys(garden, today));
   for (const key in cells) {
     const st = stage(garden, key);
+    const thirst = dry.has(key) ? " thirsty" : "";
     const off = garden.rows.includes(factors(key)[0]) ? "" : " off";
     const cur = key === sess.cur;
     if (st === "l4") blooms++;
     const cls =
       "cell " +
       st +
+      thirst +
       off +
       (cur ? " cur" : "") +
       (rests(garden, key, today) ? " rest" : "") +
@@ -142,7 +146,8 @@ export function renderGarden() {
       cells[key].className = cls;
       cells[key].style.setProperty("--i", String(sess.friends.indexOf(key)));
     }
-    const mapCls = st + off + (!cur ? "" : sess.grew ? " cur grew" : " cur");
+    const mapCls =
+      st + thirst + off + (!cur ? "" : sess.grew ? " cur grew" : " cur");
     if (mapCells[key].className !== mapCls) mapCells[key].className = mapCls;
   }
   let trees = 0;
@@ -167,6 +172,7 @@ export function renderGarden() {
   $("gCount").textContent =
     blooms +
     " von 100 blühen" +
+    (dry.size ? " · " + dry.size + " durstig" : "") +
     (trees ? " · " + trees + (trees === 1 ? " Baum" : " Bäume") : "") +
     (critters ? " · " + critters + (critters === 1 ? " Tier" : " Tiere") : "");
   $("mapCap").textContent = blooms + " von 100 blühen";

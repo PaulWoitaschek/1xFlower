@@ -249,3 +249,74 @@ test("the summary tells what can come tomorrow", async ({ page }) => {
     /^Morgen können? \d+ Blüten? kommen!/,
   );
 });
+
+test("thirsty blooms get a short watering round", async ({ page }) => {
+  const now = new Date(2026, 10, 14, 16, 0);
+  await page.clock.install({ time: now });
+  const today = dayOf(now.getTime());
+  const bloom = {
+    lvl: 4,
+    seen: 4,
+    right: 4,
+    wrong: 0,
+    wilt: false,
+    grown: today - 2,
+    watered: today - 2,
+    gap: 0,
+  };
+  const facts: Record<string, typeof bloom> = {};
+  for (let b = 1; b <= 4; b++) facts[`3x${b}`] = bloom;
+  facts["3x5"] = { ...bloom, watered: today };
+  const store = {
+    v: 2,
+    sound: false,
+    haptic: false,
+    active: "a",
+    profiles: [{ id: "a", name: "Lena", flower: 3 }],
+    data: {
+      a: { facts, points: 0, best: 0, rows: [3], deco: [], critters: [] },
+    },
+  };
+  await page.addInitScript((saved) => {
+    localStorage.setItem("einmaleins-garten-v2", saved);
+  }, JSON.stringify(store));
+  await page.goto("/");
+
+  await expect(page.locator("#roundText")).toHaveText(
+    "Gießrunde: Blume 1 von 4",
+  );
+  await expect(page.locator("#fb")).toContainText("Diese Blume hat Durst");
+  await expect(page.locator("#gCount")).toContainText("4 durstig");
+  await expect(page.locator("#hero")).toHaveClass(/thirsty/);
+  await expect(gardenPlant(page, 3, 5)).not.toHaveClass(/thirsty/);
+
+  const { a, b } = await answer(page);
+
+  await expect(page.locator("#hero .tag")).toHaveText("Gegossen!");
+  await expect(page.locator("#fb")).toContainText(
+    "Sie bleibt jetzt länger frisch!",
+  );
+  await expect(gardenPlant(page, a, b)).toHaveClass(/\bl4\b/);
+  await expect(gardenPlant(page, a, b)).not.toHaveClass(/thirsty/);
+  await expect(page.locator("#gCount")).toContainText("3 durstig");
+  await page.clock.runFor(3000);
+
+  for (let task = 2; task <= 4; task++) {
+    await expect(page.locator("#roundText")).toHaveText(
+      `Gießrunde: Blume ${task} von 4`,
+    );
+    await answer(page);
+    await page.clock.runFor(3000);
+  }
+
+  await expect(page.locator("#summary")).toBeVisible();
+  await expect(page.locator("#sumTitle")).toHaveText("Alle gegossen!");
+  await expect(page.locator("#sumScore")).toHaveText("4 / 4");
+  await expect(page.locator("#sumGarden")).toContainText(
+    "Keine Blume hat mehr Durst.",
+  );
+  await expect(page.locator("#gCount")).not.toContainText("durstig");
+
+  await page.locator("#again").click();
+  await expect(page.locator("#roundText")).toHaveText("Aufgabe 1 von 20");
+});

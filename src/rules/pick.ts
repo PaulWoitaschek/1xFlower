@@ -9,6 +9,8 @@ export interface Queue {
   qn: number;
   last: string | null;
   comeback: Comeback[];
+  /** thirsty blooms that this round asks first */
+  water: string[];
 }
 
 export function pool(rows: number[]): string[] {
@@ -42,6 +44,10 @@ export function pickNext(
   random = Math.random,
 ): string {
   const keys = pool(garden.rows);
+  while (queue.water.length) {
+    const key = queue.water.shift()!;
+    if (keys.includes(key) && key !== queue.last) return key;
+  }
   const due = queue.comeback.findIndex(
     (c) => c.due <= queue.qn && c.key !== queue.last && keys.includes(c.key),
   );

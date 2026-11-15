@@ -33,13 +33,19 @@
             <span class="mult" id="sMult" hidden>×2</span>
           </div>
           <div class="stat blooms">
-            <small>Blüten</small><b id="sBlooms">0</b>
+            <small id="sBloomsLab">Blüten</small><b id="sBlooms">0</b>
           </div>
         </div>
       </header>
 
       <div class="main">
         <section class="play" aria-label="Aufgabe">
+          <div class="modes" role="group" aria-label="Was möchtest du üben?">
+            <button id="modeGarden" aria-pressed="true"><b>×</b> Garten</button>
+            <button id="modeFarm" aria-pressed="false">
+              <b>:</b> Bauernhof
+            </button>
+          </div>
           <div>
             <div class="roundlabel">
               <span id="roundText">Aufgabe 1 von 20</span>
@@ -51,13 +57,14 @@
             <div class="scene">
               <button class="mapbtn" id="mapBtn" aria-label="Garten ansehen">
                 <span class="map" id="map"></span>
+                <span class="map fmap" id="fmap"></span>
                 <span id="mapCap"></span>
               </button>
               <div class="hero" id="hero"></div>
             </div>
             <div class="eq" aria-live="polite">
               <span id="qa">7</span>
-              <span class="x">×</span>
+              <span class="x" id="qop">×</span>
               <span id="qb">8</span>
               <span>=</span>
               <span class="answer empty" id="ans">?</span>
@@ -107,6 +114,28 @@
             </div>
           </div>
         </aside>
+
+        <aside class="garden farm" id="farm" aria-label="Mein Bauernhof">
+          <div class="ghead">
+            <h2 id="fTitle">Mein Bauernhof</h2>
+            <button class="btn" id="fToPlay">Weiter üben</button>
+          </div>
+          <p class="gcount" id="fCount">0 von 100 sind Heu</p>
+          <div class="bedbox">
+            <div class="bed meadow">
+              <div class="grid" id="fgrid"></div>
+            </div>
+          </div>
+          <div class="gside">
+            <div class="barnyard" id="barnyard"></div>
+            <p class="fnote" id="fNote" aria-live="polite"></p>
+            <p class="fhint" id="fHint"></p>
+            <div class="settings">
+              <h3>Welche Reihen teilen?</h3>
+              <div class="chips" id="frows"></div>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -128,6 +157,30 @@
         </div>
         <button class="big-go" id="again">Neue Runde</button>
         <button class="btn" id="toGarden">Garten ansehen</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="feed" hidden>
+      <div
+        class="sheet fsheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedTitle"
+      >
+        <div class="feedwho" id="feedWho"></div>
+        <h2 id="feedTitle">Was frisst dein Küken?</h2>
+        <p id="feedNeed"></p>
+        <button class="big-go feedhay" id="feedHay">Heu geben</button>
+        <div class="feedflowers" id="feedFlowerWrap">
+          <span class="plabel">Oder eine Blume aus dem Garten</span>
+          <p class="fsub">
+            Rechne ihre Aufgabe, dann frisst es die Blume. Sie wächst im Garten
+            neu, so übst du sie noch einmal.
+          </p>
+          <p class="fsub" id="feedNone">Im Garten blüht gerade keine Blume.</p>
+          <div class="pick" id="feedFlowers"></div>
+        </div>
+        <button class="btn" id="feedClose">Zurück</button>
       </div>
     </div>
 

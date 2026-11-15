@@ -168,6 +168,7 @@ export function renderGarden() {
   renderYard();
   tendLife();
   const critters = garden.critters.length;
+  $("sBloomsLab").textContent = "Blüten";
   $("sBlooms").textContent = String(blooms);
   $("gCount").textContent =
     blooms +
@@ -240,11 +241,15 @@ export function flyCritter(c: Critter) {
 // On phones, a dot flies from the task's flower to its plant on the map.
 export function flyToMap() {
   const dot = mapCells[sess.cur];
+  if (dot) flyDot(dot, flowerColor(varietyOf(sess.cur)));
+}
+
+export function flyDot(dot: HTMLElement, color: string) {
   if (reduce || !dot.offsetParent) return;
   const { x, y } = flowerPoint();
   const to = dot.getBoundingClientRect();
   const el = mk("i", "seedfly");
-  el.style.background = flowerColor(varietyOf(sess.cur));
+  el.style.background = color;
   document.body.appendChild(el);
   el.animate(
     [
@@ -262,6 +267,9 @@ export function flyToMap() {
   ).onfinish = () => el.remove();
 }
 
+// Shows the garden or the farm, whichever is played.
 export function showGarden() {
-  $("garden").scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+  $(store.mode === "farm" ? "farm" : "garden").scrollIntoView({
+    behavior: reduce ? "auto" : "smooth",
+  });
 }

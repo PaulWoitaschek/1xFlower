@@ -7,8 +7,12 @@ export interface Profile {
   flower: number;
 }
 
+/** the garden practices the multiplication, the farm the division */
+export type Mode = "garden" | "farm";
+
 export interface Store {
   v: 2;
+  mode?: Mode;
   sound: boolean;
   music: boolean;
   haptic: boolean;

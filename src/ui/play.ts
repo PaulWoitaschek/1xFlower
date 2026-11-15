@@ -1,5 +1,6 @@
 import { CRITTER_NAMES } from "../art/critters";
 import { sized } from "../art/deco";
+import { chickenSVG, grassSVG } from "../art/farm";
 import { flowerSVG, varietyOf } from "../art/flowers";
 import { answer, multiplier, newRound, ROUND } from "../rules/answer";
 import {
@@ -11,9 +12,21 @@ import {
   stage,
   tomorrow,
 } from "../rules/garden";
+import {
+  answerFarm,
+  divParts,
+  EGG_WARMTH,
+  farmOf,
+  feedFlower,
+  flowerTask,
+  hayPatches,
+  patchStage,
+  pickFarm,
+  quotientOf,
+} from "../rules/farm";
 import { claimGifts, nextGift } from "../rules/gifts";
 import { nothingGrows, pickNext } from "../rules/pick";
-import { upgrade } from "../rules/storage";
+import { upgrade, type Mode } from "../rules/storage";
 import { thirsty, thirstyKeys, WATER_MIN, waterQueue } from "../rules/thirst";
 import { $, mk, reduce } from "./dom";
 import {
@@ -23,6 +36,15 @@ import {
   renderGarden,
   showGarden,
 } from "./garden";
+import {
+  buildFarm,
+  closeFeed,
+  flyToFarmMap,
+  GRASS,
+  HAY,
+  mealText,
+  renderFarm,
+} from "./farm";
 import { haptic } from "./haptics";
 import { greetBloom } from "./life";
 import { confetti, heartsFromFlower, rainOnFlower, sparkle } from "./particles";
@@ -75,7 +97,41 @@ function tomorrowText() {
 
 const MORE_ROWS = "Nimm im Garten eine Reihe dazu!";
 
+const farmMode = () => store.mode === "farm";
+
+const sub = (text: string) => '<span class="sub">' + text + "</span>";
+
+function eaterOf(feeding: { chicken: string } | null) {
+  if (!feeding) return null;
+  return farmOf(garden).chickens.find((c) => c.id === feeding.chicken) || null;
+}
+
+function farmHint() {
+  const farm = farmOf(garden);
+  const eater = eaterOf(sess.feeding);
+  if (eater)
+    return sub(
+      "Weißt du es? Dann frisst dein " +
+        (eater.grown ? "Huhn" : "Küken") +
+        " die Blume.",
+    );
+  const egg = farm.eggs[0];
+  if (egg) {
+    const left = EGG_WARMTH - egg.warmth;
+    return sub(
+      "Noch " +
+        left +
+        (left === 1 ? " richtige Antwort" : " richtige Antworten") +
+        ", dann schlüpft ein Küken!",
+    );
+  }
+  if (farm.hay && farm.chickens.some((c) => !c.grown))
+    return sub("Dein Küken hat Hunger. Füttere es im Hof!");
+  return "";
+}
+
 function hint() {
+  if (farmMode()) return farmHint();
   if (thirsty(garden.facts[sess.cur], today())) {
     return '<span class="sub">Diese Blume hat Durst. Weißt du es noch?</span>';
   }
@@ -104,6 +160,14 @@ function hint() {
 
 // Thirsty blooms come first: three or more get a short round of their own.
 function startRound() {
+  sess.bales = 0;
+  sess.chicks = 0;
+  if (farmMode()) {
+    sess.water = [];
+    sess.round = newRound();
+    newTask();
+    return;
+  }
   sess.water = waterQueue(garden, today());
   const short = sess.water.length >= WATER_MIN;
   sess.round = newRound(short ? sess.water.length : ROUND, short);
@@ -116,7 +180,13 @@ function newTask() {
     return;
   }
   sess.qn++;
-  sess.cur = pickNext(garden, sess, today());
+  sess.feeding = null;
+  if (!farmMode()) sess.cur = pickNext(garden, sess, today());
+  else if (sess.feed) {
+    sess.feeding = sess.feed;
+    sess.feed = null;
+    sess.cur = flowerTask(sess.feeding.flower);
+  } else sess.cur = pickFarm(farmOf(garden), sess);
   sess.input = "";
   sess.phase = "ask";
   sess.t0 = performance.now();
@@ -125,6 +195,9 @@ function newTask() {
   sess.moment = null;
   sess.newTree = null;
   sess.newDeco = null;
+  sess.bale = null;
+  sess.newStack = null;
+  sess.hatched = null;
   setFb("", hint());
   endRainbow();
   render();
@@ -146,13 +219,18 @@ function bloomParty(big: boolean) {
   }
 }
 
+// The answer to the current task.
+const solution = (key: string) => {
+  if (farmMode()) return quotientOf(key);
+  const [a, b] = factors(key);
+  return a * b;
+};
+
 function submit() {
   if (!sess.input || sess.phase === "ok") return;
-  const [a, b] = factors(sess.cur);
-  const product = a * b;
   const value = +sess.input;
   if (sess.phase === "fix") {
-    if (value === product) {
+    if (value === solution(sess.cur)) {
       sess.phase = "ok";
       sess.moment = { type: "good", text: "Gegossen!" };
       setFb("good", '<span class="big">Jetzt sitzt es!</span>');
@@ -172,6 +250,9 @@ function submit() {
   }
 
   const fast = performance.now() - sess.t0 < 4000;
+  if (farmMode()) return submitFarm(value, fast);
+  const [a, b] = factors(sess.cur);
+  const product = a * b;
   const result = answer(garden, sess, sess.cur, value, fast, today());
   if (!result.right) {
     setFb(
@@ -293,8 +374,117 @@ function submit() {
   );
 }
 
+// The first answer to a division task on the farm.
+function submitFarm(value: number, fast: boolean) {
+  const key = sess.cur;
+  const [dividend, divisor] = divParts(key);
+  const feeding = sess.feeding;
+  const result = answerFarm(garden, sess, key, value, fast);
+  if (!result.right) {
+    const q = quotientOf(key);
+    setFb(
+      "bad",
+      '<span class="big">' +
+        dividend +
+        " : " +
+        divisor +
+        " = " +
+        q +
+        '</span><span class="sub">Tipp die ' +
+        q +
+        " ein. Das kommt bald wieder." +
+        (feeding ? " Die Blume bleibt im Garten." : "") +
+        "</span>",
+    );
+    sess.phase = "fix";
+    sess.input = "";
+    sess.moment = { type: "bad", text: "Vertrocknet" };
+    save();
+    render();
+    replay($("task"), "shake");
+    sfx("bad");
+    haptic("bad");
+    return;
+  }
+
+  const { points, before, bale, newHay, rowDone, freshAgain, hatched } = result;
+  const eater = eaterOf(feeding);
+  const meal =
+    feeding && eater
+      ? feedFlower(garden, eater.id, feeding.flower, today())
+      : null;
+  if (bale) sess.bales++;
+  if (hatched) {
+    sess.chicks++;
+    sess.hatched = hatched.id;
+  }
+  if (newHay) sess.bale = key;
+  if (rowDone) sess.newStack = divisor;
+  let text = "+" + points + " Punkte" + (fast ? " (schnell!)" : "");
+  if (hatched) text = "Ein Küken ist geschlüpft! Schau mal in den Hof.";
+  else if (meal && eater)
+    text =
+      mealText(eater, meal) +
+      (meal.grown || meal.egg ? "" : " Die Blume wächst im Garten neu.");
+  else if (rowDone)
+    text = "Die " + divisor + "er-Reihe ist ganz Heu! Ein Heuhaufen entsteht.";
+  else if (bale) text = "Ein Heuballen für die Scheune! (+" + points + ")";
+  setFb(
+    "good",
+    '<span class="big">' +
+      PRAISE[Math.floor(Math.random() * PRAISE.length)] +
+      '</span><span class="sub">' +
+      text +
+      "</span>",
+  );
+  sess.phase = "ok";
+  sess.moment = hatched
+    ? { type: "bloom", text: "Piep!" }
+    : meal
+      ? { type: "bloom", text: "Lecker!" }
+      : rowDone
+        ? { type: "bloom", text: "Reihe komplett!" }
+        : bale
+          ? { type: newHay ? "bloom" : "good", text: "Heu!" }
+          : { type: "good", text: freshAgain ? "Wieder grün!" : "Wächst!" };
+  sess.grew = before < 4;
+  save();
+  render();
+  replay($("ans"), "pop");
+  flyToFarmMap();
+  const big = hatched || rowDone || meal?.grown || meal?.egg;
+  if (big) {
+    sfx(hatched ? "peep" : "fanfare");
+    if (hatched) setTimeout(() => sfx("fanfare"), 450);
+    haptic("bloom");
+    sparkle(40, HAY);
+    confetti();
+    heartsFromFlower(12);
+  } else if (meal || newHay) {
+    sfx(meal ? "peep" : "bloom");
+    haptic("bloom");
+    sparkle(30, HAY);
+    if (meal) heartsFromFlower(8);
+    else confetti();
+  } else {
+    sfx("good");
+    haptic("good");
+    sparkle(14, bale ? HAY : GRASS);
+    if (sess.streak % 5 === 0) {
+      sfx("streak");
+      confetti();
+    }
+  }
+  setTimeout(newTask, big ? 2700 : meal || newHay ? 2100 : 1350);
+}
+
 function press(k: string) {
-  if (sess.phase === "ok" || !$("summary").hidden || !$("profiles").hidden)
+  if (
+    sess.phase === "ok" ||
+    !$("summary").hidden ||
+    !$("profiles").hidden ||
+    !$("feed").hidden
+  )
     return;
   if (k === "ok") return submit();
   if (k === "del") {
@@ -311,8 +501,9 @@ function press(k: string) {
 }
 
 function renderTask() {
-  const [a, b] = factors(sess.cur);
+  const [a, b] = farmMode() ? divParts(sess.cur) : factors(sess.cur);
   $("qa").textContent = String(a);
+  $("qop").textContent = farmMode() ? ":" : "×";
   $("qb").textContent = String(b);
   const ans = $("ans");
   ans.textContent = sess.input || "?";
@@ -340,6 +531,48 @@ function renderTask() {
     progress.appendChild(mk("i", sess.round.marks[i] || (now ? "now" : null)));
   }
 
+  if (farmMode()) renderFarmHero();
+  else renderHero();
+
+  $("soundBtn").textContent = "Ton: " + (store.sound ? "an" : "aus");
+  $("musicBtn").textContent = "Musik: " + (store.music ? "an" : "aus");
+  $("hapticBtn").textContent = "Vibration: " + (store.haptic ? "an" : "aus");
+}
+
+// The task's grass, or the bloom that a chicken eats, beside the chicken.
+function renderFarmHero() {
+  const hero = $("hero");
+  const moment = sess.moment;
+  const farm = farmOf(garden);
+  const eater = eaterOf(sess.feeding);
+  hero.className =
+    "hero " +
+    (eater ? "l4" : patchStage(farm, sess.cur)) +
+    (sess.bale === sess.cur ? " bloomed" : "") +
+    (moment ? " moment m-" + moment.type : "");
+  const heroKey = "farm|" + sess.cur + "|" + (eater ? eater.id : "");
+  if (sess.heroKey !== heroKey) {
+    sess.heroKey = heroKey;
+    hero.innerHTML =
+      '<div class="pot">' +
+      (eater && sess.feeding
+        ? flowerSVG(varietyOf(sess.feeding.flower)) +
+          '<span class="eater">' +
+          chickenSVG(eater) +
+          "</span>"
+        : grassSVG()) +
+      '</div><div class="stages" aria-hidden="true"><i></i><i></i><i></i><i class="top"></i></div><span class="tag"></span>';
+  }
+  const fact = farm.facts[sess.cur];
+  const level = fact && fact.seen ? fact.lvl : 0;
+  hero.querySelectorAll(".stages i").forEach((dot, i) => {
+    dot.classList.toggle("on", i < level);
+    dot.classList.toggle("pulse", !!moment && sess.grew && i === level - 1);
+  });
+  if (moment) hero.querySelector(".tag")!.textContent = moment.text;
+}
+
+function renderHero() {
   const hero = $("hero");
   const moment = sess.moment;
   hero.className =
@@ -362,14 +595,11 @@ function renderTask() {
     dot.classList.toggle("pulse", !!moment && sess.grew && i === level - 1);
   });
   if (moment) hero.querySelector(".tag")!.textContent = moment.text;
-
-  $("soundBtn").textContent = "Ton: " + (store.sound ? "an" : "aus");
-  $("musicBtn").textContent = "Musik: " + (store.music ? "an" : "aus");
-  $("hapticBtn").textContent = "Vibration: " + (store.haptic ? "an" : "aus");
 }
 
 function render() {
   renderGarden();
+  renderFarm();
   renderTask();
   sess.grew = false;
 }
@@ -389,6 +619,41 @@ function showSummary() {
         ? "Toll gemacht!"
         : "Runde geschafft!";
   $("sumPoints").textContent = "+" + round.points + " Punkte in dieser Runde";
+  if (farmMode()) farmSummary();
+  else gardenSummary();
+  const missed = $("sumMiss");
+  missed.innerHTML = "";
+  for (const key of round.missed) {
+    missed.appendChild(
+      mk("span", null, key.replace("x", " × ").replace(":", " : ")),
+    );
+  }
+  $("sumMissWrap").hidden = !round.missed.length;
+  $("summary").hidden = false;
+  sfx(good ? "fanfare" : "done");
+  haptic("bloom");
+  if (good) confetti();
+  $("again").focus();
+}
+
+function farmSummary() {
+  const { bales, chicks } = sess;
+  $("sumGarden").textContent =
+    (bales
+      ? bales + (bales === 1 ? " neuer Heuballen! " : " neue Heuballen! ")
+      : "Deine Wiese wächst. ") +
+    (chicks
+      ? chicks === 1
+        ? "Ein Küken ist geschlüpft! "
+        : chicks + " Küken sind geschlüpft! "
+      : "") +
+    hayPatches(farmOf(garden)) +
+    " von 100 sind Heu.";
+  $("sumNext").hidden = true;
+}
+
+function gardenSummary() {
+  const round = sess.round;
   const dry = thirstyKeys(garden, today()).length;
   $("sumGarden").textContent =
     (round.water
@@ -410,34 +675,50 @@ function showSummary() {
       : "");
   $("sumNext").textContent = next.trim();
   $("sumNext").hidden = !next.trim();
-  const missed = $("sumMiss");
-  missed.innerHTML = "";
-  for (const key of round.missed) {
-    missed.appendChild(mk("span", null, key.replace("x", " × ")));
-  }
-  $("sumMissWrap").hidden = !round.missed.length;
-  $("summary").hidden = false;
-  sfx(good ? "fanfare" : "done");
-  haptic("bloom");
-  if (good) confetti();
-  $("again").focus();
 }
 
+// The row chips of the garden and of the farm.
 function buildRows() {
-  const rows = $("rows");
+  rowChips(
+    "rows",
+    "row",
+    false,
+    () => garden,
+    () => factors(sess.cur)[0],
+  );
+  rowChips(
+    "frows",
+    "frow",
+    true,
+    () => farmOf(garden),
+    () => divParts(sess.cur)[1],
+  );
+}
+
+function rowChips(
+  id: string,
+  prefix: string,
+  farm: boolean,
+  owner: () => { rows: number[] },
+  curRow: () => number,
+) {
+  const rows = $(id);
   rows.innerHTML = "";
   for (let a = 1; a <= 10; a++) {
     const chip = mk("button", "chip", String(a));
-    chip.id = "row" + a;
-    chip.setAttribute("aria-pressed", String(garden.rows.includes(a)));
+    chip.id = prefix + a;
+    chip.setAttribute("aria-pressed", String(owner().rows.includes(a)));
     chip.onclick = () => {
-      if (garden.rows.includes(a)) {
-        if (garden.rows.length === 1) return;
-        garden.rows = garden.rows.filter((row) => row !== a);
-      } else garden.rows = [...garden.rows, a].sort((x, y) => x - y);
-      chip.setAttribute("aria-pressed", String(garden.rows.includes(a)));
+      const o = owner();
+      if (o.rows.includes(a)) {
+        if (o.rows.length === 1) return;
+        o.rows = o.rows.filter((row) => row !== a);
+      } else o.rows = [...o.rows, a].sort((x, y) => x - y);
+      chip.setAttribute("aria-pressed", String(o.rows.includes(a)));
       save();
-      if (!garden.rows.includes(factors(sess.cur)[0]) && sess.phase === "ask") {
+      const asked =
+        farmMode() === farm && sess.phase === "ask" && !sess.feeding;
+      if (asked && !o.rows.includes(curRow())) {
         sess.qn--;
         newTask();
       } else render();
@@ -456,6 +737,7 @@ function resetIdle() {
     $("resetYes").onclick = () => {
       const next = freshGarden();
       next.rows = garden.rows;
+      next.farm = garden.farm;
       setGarden(next);
       if (store.active) store.data[store.active] = next;
       save();
@@ -477,10 +759,52 @@ function activate(id: string) {
   sess.comeback = [];
   sess.last = null;
   sess.heroKey = null;
+  sess.feed = null;
+  sess.hatched = null;
+  closeFeed();
   buildRows();
   resetIdle();
   updateWho();
   startRound();
+}
+
+// The garden practices the multiplication, the farm the division.
+function setMode(mode: Mode) {
+  if ((store.mode || "garden") === mode) return;
+  store.mode = mode;
+  save();
+  showMode();
+  sess.comeback = [];
+  sess.last = null;
+  sess.heroKey = null;
+  sess.feed = null;
+  closeFeed();
+  $("summary").hidden = true;
+  sfx("tap");
+  startRound();
+}
+
+function showMode() {
+  const farm = farmMode();
+  document.body.dataset.mode = farm ? "farm" : "garden";
+  $("modeGarden").setAttribute("aria-pressed", String(!farm));
+  $("modeFarm").setAttribute("aria-pressed", String(farm));
+  $("mapBtn").setAttribute(
+    "aria-label",
+    farm ? "Bauernhof ansehen" : "Garten ansehen",
+  );
+  $("toGarden").textContent = farm ? "Hof ansehen" : "Garten ansehen";
+}
+
+// A chicken eats a bloom when the child knows its task: it is the next task.
+function pickFlower(chicken: string, flower: string) {
+  sess.feed = { chicken, flower };
+  scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  // else the next task asks it
+  if (sess.phase === "ask" && $("summary").hidden) {
+    sess.qn--;
+    newTask();
+  }
 }
 
 export function start() {
@@ -489,6 +813,10 @@ export function start() {
     if (key) press(key.dataset.k!);
   });
   document.addEventListener("keydown", (e) => {
+    if (!$("feed").hidden) {
+      if (e.key === "Escape") closeFeed();
+      return;
+    }
     if (!$("profiles").hidden) {
       if (e.key === "Escape") closeProfiles();
       return;
@@ -534,12 +862,16 @@ export function start() {
     showGarden();
   };
   $("mapBtn").onclick = showGarden;
-  $("toPlay").onclick = () =>
+  $("toPlay").onclick = $("fToPlay").onclick = () =>
     scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  $("modeGarden").onclick = () => setMode("garden");
+  $("modeFarm").onclick = () => setMode("farm");
   initProfiles(activate);
   initMusic();
 
   buildGarden();
+  buildFarm(pickFlower);
+  showMode();
   buildRows();
   resetIdle();
   updateWho();

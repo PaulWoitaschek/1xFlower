@@ -129,6 +129,12 @@ const SFX = {
       bell(f, t + 0.15 + i * 0.09, 0.4, 0.035),
     );
   },
+  // a chick peeps
+  peep(t: number) {
+    [0, 0.16, 0.3].forEach((d, i) =>
+      tone(2300 + i * 150, t + d, 0.09, { vol: 0.06, to: 3300 + i * 200 }),
+    );
+  },
   done(t: number) {
     [523, 659, 784].forEach((f, i) => bell(f, t + i * 0.12, 0.7, 0.09));
   },

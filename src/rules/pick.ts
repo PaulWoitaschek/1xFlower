@@ -48,16 +48,28 @@ export function pickNext(
     const key = queue.water.shift()!;
     if (keys.includes(key) && key !== queue.last) return key;
   }
+  return pickWeighted(
+    keys,
+    queue,
+    (key) => weight(garden.facts[key], today),
+    random,
+  );
+}
+
+// A task that comes back is first when it is due. Else the weights pick, and never the last task again.
+export function pickWeighted(
+  keys: string[],
+  queue: Queue,
+  weightOf: (key: string) => number,
+  random = Math.random,
+): string {
   const due = queue.comeback.findIndex(
     (c) => c.due <= queue.qn && c.key !== queue.last && keys.includes(c.key),
   );
   if (due >= 0) return queue.comeback.splice(due, 1)[0].key;
   let total = 0;
   const weights = keys.map((key) => {
-    const w =
-      key === queue.last && keys.length > 1
-        ? 0
-        : weight(garden.facts[key], today);
+    const w = key === queue.last && keys.length > 1 ? 0 : weightOf(key);
     total += w;
     return w;
   });

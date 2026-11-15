@@ -1,3 +1,5 @@
+import type { Farm } from "./farm";
+
 export interface Fact {
   lvl: number;
   seen: number;
@@ -28,6 +30,8 @@ export interface Garden {
   rows: number[];
   deco: string[];
   critters: Critter[];
+  /** the farm with the division, see farmOf */
+  farm?: Farm;
 }
 
 export type Stage = "u" | "l0" | "l1" | "l2" | "l3" | "l4" | "wilt";

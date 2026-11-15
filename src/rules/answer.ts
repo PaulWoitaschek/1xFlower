@@ -4,6 +4,7 @@ import {
   factors,
   rowComplete,
   type Critter,
+  type Fact,
   type Garden,
 } from "./garden";
 import { claimGifts } from "./gifts";
@@ -67,6 +68,51 @@ export interface Wrong {
   right: false;
 }
 
+// The task is asked: its fact counts one more time.
+export function see(
+  facts: Record<string, Fact>,
+  play: Play,
+  key: string,
+): Fact {
+  const fact = (facts[key] ||= {
+    lvl: 0,
+    seen: 0,
+    right: 0,
+    wrong: 0,
+    wilt: false,
+    grown: 0,
+  });
+  fact.seen++;
+  play.round.n++;
+  play.last = key;
+  return fact;
+}
+
+// A wrong first answer: the plant wilts and the task comes back soon, two times.
+export function miss(fact: Fact, play: Play, key: string): Wrong {
+  fact.wrong++;
+  fact.lvl = 0;
+  fact.wilt = true;
+  play.streak = 0;
+  play.round.marks.push("bad");
+  if (!play.round.missed.includes(key)) play.round.missed.push(key);
+  play.comeback = play.comeback.filter((c) => c.key !== key);
+  play.comeback.push({ key, due: play.qn + 2 }, { key, due: play.qn + 6 });
+  return { right: false };
+}
+
+// A right first answer: the streak grows and brings points.
+export function score(garden: Garden, play: Play, fast: boolean): number {
+  play.streak++;
+  garden.best = Math.max(garden.best, play.streak);
+  const points = 10 * multiplier(play.streak) + (fast ? 5 : 0);
+  garden.points += points;
+  play.round.points += points;
+  play.round.right++;
+  play.round.marks.push("ok");
+  return points;
+}
+
 // The first answer to a task. It changes the garden and the play state.
 // today is the day of the answer, see dayOf.
 export function answer(
@@ -79,29 +125,9 @@ export function answer(
   random = Math.random,
 ): Right | Wrong {
   const [a, b] = factors(key);
-  const fact = (garden.facts[key] ||= {
-    lvl: 0,
-    seen: 0,
-    right: 0,
-    wrong: 0,
-    wilt: false,
-    grown: 0,
-  });
-  fact.seen++;
-  play.round.n++;
-  play.last = key;
+  const fact = see(garden.facts, play, key);
 
-  if (value !== a * b) {
-    fact.wrong++;
-    fact.lvl = 0;
-    fact.wilt = true;
-    play.streak = 0;
-    play.round.marks.push("bad");
-    if (!play.round.missed.includes(key)) play.round.missed.push(key);
-    play.comeback = play.comeback.filter((c) => c.key !== key);
-    play.comeback.push({ key, due: play.qn + 2 }, { key, due: play.qn + 6 });
-    return { right: false };
-  }
+  if (value !== a * b) return miss(fact, play, key);
 
   const before = fact.lvl;
   const wasWilt = fact.wilt;
@@ -112,13 +138,7 @@ export function answer(
     fact.grown = today;
   }
   if (fact.lvl >= 2) fact.wilt = false;
-  play.streak++;
-  garden.best = Math.max(garden.best, play.streak);
-  const points = 10 * multiplier(play.streak) + (fast ? 5 : 0);
-  garden.points += points;
-  play.round.points += points;
-  play.round.right++;
-  play.round.marks.push("ok");
+  const points = score(garden, play, fast);
   const bloom = before === 3 && fact.lvl === 4;
   if (bloom) play.round.blooms++;
   const quenched = fact.lvl === 4 && water(fact, today, bloom);

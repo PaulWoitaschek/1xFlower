@@ -46,6 +46,24 @@ interface Session extends Play {
   newDeco: string | null;
   grew: boolean;
   heroKey: string | null;
+  /** the patch that became hay with the last answer */
+  bale: string | null;
+  /** the row that became a haystack with the last answer */
+  newStack: number | null;
+  /** the chick that hatched last */
+  hatched: string | null;
+  /** a bloom that a chicken eats, asked as the next task */
+  feed: Feeding | null;
+  /** the feeding that the current task asks */
+  feeding: Feeding | null;
+  /** hay bales and chicks of this round on the farm */
+  bales: number;
+  chicks: number;
+}
+
+export interface Feeding {
+  chicken: string;
+  flower: string;
 }
 
 export const sess: Session = {
@@ -66,4 +84,11 @@ export const sess: Session = {
   newDeco: null,
   grew: false,
   heroKey: null,
+  bale: null,
+  newStack: null,
+  hatched: null,
+  feed: null,
+  feeding: null,
+  bales: 0,
+  chicks: 0,
 };

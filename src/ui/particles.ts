@@ -126,9 +126,8 @@ export function flowerPoint() {
   return { x: r.left + r.width / 2, y: r.top + r.height * 0.3, w: r.width };
 }
 
-export function sparkle(n: number) {
+export function sparkle(n: number, petal = flowerColor(varietyOf(sess.cur))) {
   const { x, y } = flowerPoint();
-  const petal = flowerColor(varietyOf(sess.cur));
   const sun = themeColor("--sun");
   addParts(
     Array.from({ length: n }, (_, i): Particle => {

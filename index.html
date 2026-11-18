@@ -15,7 +15,7 @@
     />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
-  <body>
+  <body data-mode="garden">
     <canvas id="fx"></canvas>
     <div class="wrap">
       <header>
@@ -45,6 +45,7 @@
             <button id="modeFarm" aria-pressed="false">
               <b>:</b> Bauernhof
             </button>
+            <button id="modePond" aria-pressed="false"><b>Abc</b> Teich</button>
           </div>
           <div>
             <div class="roundlabel">
@@ -58,6 +59,7 @@
               <button class="mapbtn" id="mapBtn" aria-label="Garten ansehen">
                 <span class="map" id="map"></span>
                 <span class="map fmap" id="fmap"></span>
+                <span class="map pmap" id="pmap"></span>
                 <span id="mapCap"></span>
               </button>
               <div class="hero" id="hero"></div>
@@ -69,6 +71,12 @@
               <span>=</span>
               <span class="answer empty" id="ans">?</span>
             </div>
+            <button class="cue" id="cue" aria-label="Wort anhören">
+              <span class="cuepic" id="cuePic"></span>
+              <span class="cuetext" id="cueText"></span>
+              <span class="cueear" aria-hidden="true">🔊</span>
+            </button>
+            <div class="word" id="word" aria-live="polite"></div>
           </div>
           <div class="feedback" id="fb" aria-live="polite"></div>
           <div class="pad" id="pad">
@@ -85,6 +93,7 @@
             <button data-k="0">0</button>
             <button data-k="ok" class="go">OK</button>
           </div>
+          <div class="keys" id="keys" aria-label="Tastatur"></div>
         </section>
 
         <aside class="garden" id="garden" aria-label="Mein Garten">
@@ -136,6 +145,51 @@
             </div>
           </div>
         </aside>
+
+        <aside class="garden pond" id="pond" aria-label="Mein Teich">
+          <div class="ghead">
+            <h2 id="pondTitle">Mein Teich</h2>
+            <button class="btn" id="pToPlay">Weiter üben</button>
+          </div>
+          <p class="gcount" id="pondCount">0 Seerosen blühen</p>
+          <div class="bedbox">
+            <div class="bed water">
+              <div class="lilies" id="lilies"></div>
+              <p class="pondempty" id="pondEmpty">
+                Jedes Wort, das du schreibst, wird eine Seerose.
+              </p>
+            </div>
+          </div>
+          <div class="gside">
+            <div class="gifts" id="residents" aria-label="Tiere am Teich"></div>
+            <div class="settings">
+              <h3>Welche Wörter üben?</h3>
+              <div class="chips" id="plevels"></div>
+              <h3>Welche Strategie üben?</h3>
+              <div class="chips" id="pstrategies"></div>
+              <h3><label for="ownWords">Meine Lernwörter</label></h3>
+              <textarea
+                class="pinput ownwords"
+                id="ownWords"
+                rows="4"
+                autocapitalize="off"
+                autocomplete="off"
+                placeholder="Hund&#10;Fahr-rad"
+              ></textarea>
+              <p class="fhint">
+                Schreib die Lernwörter aus der Schule hier hinein, ein Wort pro
+                Zeile. Ein Bindestrich zeigt die Silben: Fahr-rad.
+              </p>
+              <div class="row">
+                <button class="btn" id="ownSave">Lernwörter speichern</button>
+                <button class="chip" id="ownOnly" aria-pressed="false">
+                  Nur Lernwörter üben
+                </button>
+              </div>
+              <p class="fnote" id="ownNote" aria-live="polite"></p>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -152,7 +206,9 @@
         <p id="sumGarden"></p>
         <p class="sum-next" id="sumNext" hidden></p>
         <div id="sumMissWrap">
-          <p style="margin-bottom: 8px">Diese Aufgaben gießen wir weiter:</p>
+          <p style="margin-bottom: 8px" id="sumMissLab">
+            Diese Aufgaben gießen wir weiter:
+          </p>
           <div class="misses" id="sumMiss"></div>
         </div>
         <button class="big-go" id="again">Neue Runde</button>

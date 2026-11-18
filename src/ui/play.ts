@@ -24,6 +24,18 @@ import {
   pickFarm,
   quotientOf,
 } from "../rules/farm";
+import {
+  arrives,
+  nextResident,
+  openLilies,
+  POND_ROUND,
+  pickPond,
+  pondOf,
+  pondWords,
+  retryWord,
+  tryWord,
+  wordOf,
+} from "../rules/pond";
 import { claimGifts, nextGift } from "../rules/gifts";
 import { nothingGrows, pickNext } from "../rules/pick";
 import { upgrade, type Mode } from "../rules/storage";
@@ -45,6 +57,21 @@ import {
   mealText,
   renderFarm,
 } from "./farm";
+import {
+  buildPond,
+  flyToPondMap,
+  inPond,
+  quietPond,
+  renderPond,
+  renderPondTask,
+  runTip,
+  solutionHtml,
+  speakTask,
+  tipHtml,
+  WATER,
+  WORD_MAX,
+  buildPondSettings,
+} from "./pond";
 import { haptic } from "./haptics";
 import { greetBloom } from "./life";
 import { confetti, heartsFromFlower, rainOnFlower, sparkle } from "./particles";
@@ -63,6 +90,7 @@ import {
 } from "./profiles";
 import { initMusic, syncMusic } from "./music";
 import { sfx } from "./sound";
+import { initSpeech, say } from "./speech";
 import { activeProfile, garden, save, sess, setGarden, store } from "./state";
 
 const PRAISE = ["Super!", "Klasse!", "Genau!", "Stark!", "Richtig!", "Spitze!"];
@@ -98,6 +126,7 @@ function tomorrowText() {
 const MORE_ROWS = "Nimm im Garten eine Reihe dazu!";
 
 const farmMode = () => store.mode === "farm";
+const pondMode = () => store.mode === "pond";
 
 const sub = (text: string) => '<span class="sub">' + text + "</span>";
 
@@ -130,7 +159,29 @@ function farmHint() {
   return "";
 }
 
+function pondHint() {
+  const pond = pondOf(garden);
+  const fact = pond.facts[sess.cur];
+  if (thirsty(fact, today()))
+    return sub("Dieses Wort kennst du schon. Weißt du es noch?");
+  if (!Object.values(pond.facts).some((f) => f.seen))
+    return sub("Tippe auf 🔊 und hör dir das Wort an. Dann schreib es.");
+  const { resident, need } = nextResident(openLilies(pond));
+  if (resident)
+    return sub(
+      "Noch " +
+        need +
+        (need === 1 ? " Seerose" : " Seerosen") +
+        ", dann kommt: " +
+        resident.pic +
+        " " +
+        resident.name,
+    );
+  return sub("Hör genau hin und schreib das Wort.");
+}
+
 function hint() {
+  if (pondMode()) return pondHint();
   if (farmMode()) return farmHint();
   if (thirsty(garden.facts[sess.cur], today())) {
     return '<span class="sub">Diese Blume hat Durst. Weißt du es noch?</span>';
@@ -162,6 +213,12 @@ function hint() {
 function startRound() {
   sess.bales = 0;
   sess.chicks = 0;
+  if (pondMode()) {
+    sess.water = [];
+    sess.round = newRound(POND_ROUND);
+    newTask();
+    return;
+  }
   if (farmMode()) {
     sess.water = [];
     sess.round = newRound();
@@ -175,19 +232,23 @@ function startRound() {
 }
 
 function newTask() {
+  quietPond();
   if (sess.round.n >= sess.round.size) {
     showSummary();
     return;
   }
   sess.qn++;
   sess.feeding = null;
-  if (!farmMode()) sess.cur = pickNext(garden, sess, today());
+  if (pondMode()) sess.cur = pickPond(pondOf(garden), sess, today());
+  else if (!farmMode()) sess.cur = pickNext(garden, sess, today());
   else if (sess.feed) {
     sess.feeding = sess.feed;
     sess.feed = null;
     sess.cur = flowerTask(sess.feeding.flower);
   } else sess.cur = pickFarm(farmOf(garden), sess);
   sess.input = "";
+  sess.shift = false;
+  sess.newResident = null;
   sess.phase = "ask";
   sess.t0 = performance.now();
   sess.bloom = null;
@@ -201,6 +262,7 @@ function newTask() {
   setFb("", hint());
   endRainbow();
   render();
+  if (pondMode() && store.sound) speakTask();
 }
 
 // A new bloom is a small party: hearts rise, and bees or butterflies come.
@@ -228,6 +290,7 @@ const solution = (key: string) => {
 
 function submit() {
   if (!sess.input || sess.phase === "ok") return;
+  if (pondMode()) return submitPond();
   const value = +sess.input;
   if (sess.phase === "fix") {
     if (value === solution(sess.cur)) {
@@ -478,6 +541,197 @@ function submitFarm(value: number, fast: boolean) {
   setTimeout(newTask, big ? 2700 : meal || newHay ? 2100 : 1350);
 }
 
+// A word of the pond: the first try, the second try after the tip, and the copy.
+function submitPond() {
+  const pond = pondOf(garden);
+  const word = wordOf(pond, sess.cur);
+  const typed = sess.input;
+  if (sess.flash) return;
+  if (sess.phase === "fix") {
+    if (typed === word.text) {
+      sess.phase = "ok";
+      sess.moment = { type: "good", text: "Gegossen!" };
+      setFb("good", '<span class="big">Jetzt sitzt es!</span>');
+      render();
+      sfx("water");
+      haptic("good");
+      rainOnFlower();
+      setTimeout(newTask, 1300);
+    } else {
+      sess.input = "";
+      render();
+      replay($("task"), "shake");
+      sfx("bad");
+      haptic("bad");
+    }
+    return;
+  }
+
+  if (sess.phase === "again") {
+    const result = retryWord(garden, sess, word, typed);
+    if (result.right) {
+      sess.phase = "ok";
+      sess.moment = { type: "good", text: "Geschafft!" };
+      setFb(
+        "good",
+        '<span class="big">Mit Tipp geschafft!</span>' +
+          sub(
+            "+" + result.points + " Punkte. Das Wort kommt gleich noch einmal.",
+          ),
+      );
+      save();
+      render();
+      replay($("word"), "pop");
+      sfx("good");
+      haptic("good");
+      sparkle(14, WATER);
+      setTimeout(newTask, 1700);
+    } else {
+      setFb("bad", solutionHtml(word, result.verdict));
+      sess.phase = "fix";
+      sess.input = "";
+      sess.moment = { type: "bad", text: "Verwelkt" };
+      save();
+      render();
+      replay($("task"), "shake");
+      sfx("bad");
+      haptic("bad");
+      if (store.sound) say([word.text]);
+    }
+    return;
+  }
+
+  const result = tryWord(garden, sess, word, typed, today());
+  if (!result.right) {
+    // a tip is help, not a punishment: no shake, no bad sound
+    sess.phase = "again";
+    sess.input = "";
+    setFb("tip", tipHtml(word, result.verdict));
+    save();
+    render();
+    // the tip must be in the page first, runTip moves its parts
+    runTip(word, result.verdict);
+    if (sess.flash) render();
+    sfx("del");
+    haptic("tap");
+    return;
+  }
+
+  const { points, before, bloom, rest, freshAgain, quenched } = result;
+  let text = "+" + points + " Punkte";
+  let resident = null;
+  if (bloom) {
+    sess.bloom = sess.cur;
+    resident = arrives(openLilies(pond));
+    if (resident) sess.newResident = resident.name;
+  }
+  if (resident)
+    text = resident.pic + " " + resident.name + " zieht an den Teich!";
+  else if (bloom) text = "Die Seerose blüht! " + text;
+  else if (quenched) text = "Sie bleibt jetzt länger offen! (+" + points + ")";
+  else if (rest)
+    text =
+      (before === 3
+        ? "Morgen kann sie blühen!"
+        : "Morgen kann eine Knospe wachsen!") +
+      " (+" +
+      points +
+      ")";
+  setFb(
+    "good",
+    '<span class="big">' +
+      PRAISE[Math.floor(Math.random() * PRAISE.length)] +
+      "</span>" +
+      sub(text),
+  );
+  sess.phase = "ok";
+  sess.moment = bloom
+    ? { type: "bloom", text: "Blüht!" }
+    : {
+        type: "good",
+        text: freshAgain
+          ? "Wieder frisch!"
+          : rest || quenched
+            ? "Gegossen!"
+            : before === 4
+              ? "Blüht weiter!"
+              : "Wächst!",
+      };
+  sess.grew = !rest;
+  save();
+  render();
+  replay($("word"), "pop");
+  flyToPondMap();
+  if (resident) {
+    sfx("fanfare");
+    haptic("bloom");
+    sparkle(40, WATER);
+    confetti();
+    setTimeout(confetti, 600);
+    heartsFromFlower(14);
+    rainbow();
+  } else if (bloom) {
+    sfx("bloom");
+    haptic("bloom");
+    sparkle(40, WATER);
+    confetti();
+    heartsFromFlower(8);
+  } else {
+    sfx("good");
+    haptic("good");
+    sparkle(14, WATER);
+    if (rest || quenched) {
+      rainOnFlower();
+      setTimeout(() => sfx("water"), 250);
+    }
+    if (sess.streak % 5 === 0) {
+      sfx("streak");
+      confetti();
+    }
+  }
+  setTimeout(newTask, resident ? 2800 : bloom ? 2500 : 1350);
+}
+
+// A key of the letter keyboard of the pond.
+function pressPond(k: string) {
+  if (
+    sess.phase === "ok" ||
+    !$("summary").hidden ||
+    !$("profiles").hidden ||
+    !$("feed").hidden
+  )
+    return;
+  if (k === "say") return speakTask();
+  if (sess.flash) return;
+  if (k === "ok") return submit();
+  if (k === "shift") sess.shift = !sess.shift;
+  else if (k === "del") {
+    if (!sess.input) return;
+    sess.input = sess.input.slice(0, -1);
+    sfx("del");
+  } else {
+    if (sess.input.length >= WORD_MAX) return;
+    sess.input += sess.shift && k !== "ß" ? k.toUpperCase() : k;
+    sess.shift = false;
+    sfx("tap");
+  }
+  haptic("tap");
+  render();
+}
+
+// The words of the pond changed: a task that is not in the pond any more is replaced.
+function pondChanged() {
+  if (
+    pondMode() &&
+    $("summary").hidden &&
+    (sess.phase === "ask" || sess.phase === "again") &&
+    !inPond(sess.cur)
+  ) {
+    sess.qn--;
+    newTask();
+  } else render();
+}
+
 function press(k: string) {
   if (
     sess.phase === "ok" ||
@@ -501,15 +755,18 @@ function press(k: string) {
 }
 
 function renderTask() {
-  const [a, b] = farmMode() ? divParts(sess.cur) : factors(sess.cur);
-  $("qa").textContent = String(a);
-  $("qop").textContent = farmMode() ? ":" : "×";
-  $("qb").textContent = String(b);
-  const ans = $("ans");
-  ans.textContent = sess.input || "?";
-  ans.classList.toggle("empty", !sess.input);
+  if (!pondMode()) {
+    const [a, b] = farmMode() ? divParts(sess.cur) : factors(sess.cur);
+    $("qa").textContent = String(a);
+    $("qop").textContent = farmMode() ? ":" : "×";
+    $("qb").textContent = String(b);
+    const ans = $("ans");
+    ans.textContent = sess.input || "?";
+    ans.classList.toggle("empty", !sess.input);
+  }
   const task = $("task");
   task.classList.toggle("fix", sess.phase === "fix");
+  task.classList.toggle("again", sess.phase === "again");
   task.classList.toggle("ok", sess.phase === "ok");
   $("sPoints").textContent = String(garden.points);
   $("sStreak").textContent = String(sess.streak);
@@ -520,18 +777,29 @@ function renderTask() {
   const size = sess.round.size;
   const shown = Math.min(sess.round.n + (sess.phase === "ask" ? 1 : 0), size);
   $("roundText").textContent =
-    (sess.round.water ? "Gießrunde: Blume " : "Aufgabe ") +
+    (pondMode()
+      ? "Wort "
+      : sess.round.water
+        ? "Gießrunde: Blume "
+        : "Aufgabe ") +
     Math.max(shown, 1) +
     " von " +
     size;
   const progress = $("progress");
+  progress.style.gridTemplateColumns = pondMode()
+    ? "repeat(" + size + ", 1fr)"
+    : "";
   progress.innerHTML = "";
   for (let i = 0; i < size; i++) {
-    const now = i === sess.round.n && sess.phase === "ask";
+    // the second try of a word has no mark yet, but the word counts already
+    const now =
+      (sess.phase === "ask" && i === sess.round.n) ||
+      (sess.phase === "again" && i === sess.round.n - 1);
     progress.appendChild(mk("i", sess.round.marks[i] || (now ? "now" : null)));
   }
 
-  if (farmMode()) renderFarmHero();
+  if (pondMode()) renderPondTask();
+  else if (farmMode()) renderFarmHero();
   else renderHero();
 
   $("soundBtn").textContent = "Ton: " + (store.sound ? "an" : "aus");
@@ -600,6 +868,7 @@ function renderHero() {
 function render() {
   renderGarden();
   renderFarm();
+  renderPond();
   renderTask();
   sess.grew = false;
 }
@@ -619,21 +888,52 @@ function showSummary() {
         ? "Toll gemacht!"
         : "Runde geschafft!";
   $("sumPoints").textContent = "+" + round.points + " Punkte in dieser Runde";
-  if (farmMode()) farmSummary();
+  quietPond();
+  if (pondMode()) pondSummary();
+  else if (farmMode()) farmSummary();
   else gardenSummary();
   const missed = $("sumMiss");
   missed.innerHTML = "";
   for (const key of round.missed) {
     missed.appendChild(
-      mk("span", null, key.replace("x", " × ").replace(":", " : ")),
+      mk(
+        "span",
+        null,
+        pondMode() ? key : key.replace("x", " × ").replace(":", " : "),
+      ),
     );
   }
+  $("sumMissLab").textContent = pondMode()
+    ? "Diese Wörter üben wir weiter:"
+    : "Diese Aufgaben gießen wir weiter:";
   $("sumMissWrap").hidden = !round.missed.length;
   $("summary").hidden = false;
   sfx(good ? "fanfare" : "done");
   haptic("bloom");
   if (good) confetti();
   $("again").focus();
+}
+
+function pondSummary() {
+  const round = sess.round;
+  const words = pondWords(pondOf(garden));
+  const open = openLilies(pondOf(garden));
+  const tips = round.marks.filter((m) => m === "tip").length;
+  $("sumGarden").textContent =
+    (round.blooms
+      ? round.blooms +
+        (round.blooms === 1
+          ? " neue Seerose blüht! "
+          : " neue Seerosen blühen! ")
+      : "Dein Teich wächst. ") +
+    (tips
+      ? tips + (tips === 1 ? " Wort" : " Wörter") + " mit Tipp geschafft. "
+      : "") +
+    open +
+    " von " +
+    words.length +
+    " Seerosen blühen.";
+  $("sumNext").hidden = true;
 }
 
 function farmSummary() {
@@ -717,7 +1017,9 @@ function rowChips(
       chip.setAttribute("aria-pressed", String(o.rows.includes(a)));
       save();
       const asked =
-        farmMode() === farm && sess.phase === "ask" && !sess.feeding;
+        (farm ? farmMode() : store.mode !== "farm" && store.mode !== "pond") &&
+        sess.phase === "ask" &&
+        !sess.feeding;
       if (asked && !o.rows.includes(curRow())) {
         sess.qn--;
         newTask();
@@ -738,6 +1040,7 @@ function resetIdle() {
       const next = freshGarden();
       next.rows = garden.rows;
       next.farm = garden.farm;
+      next.pond = garden.pond;
       setGarden(next);
       if (store.active) store.data[store.active] = next;
       save();
@@ -762,6 +1065,9 @@ function activate(id: string) {
   sess.feed = null;
   sess.hatched = null;
   closeFeed();
+  buildPondSettings();
+  quietPond();
+  sess.shift = false;
   buildRows();
   resetIdle();
   updateWho();
@@ -779,21 +1085,32 @@ function setMode(mode: Mode) {
   sess.heroKey = null;
   sess.feed = null;
   closeFeed();
+  quietPond();
   $("summary").hidden = true;
   sfx("tap");
   startRound();
 }
 
 function showMode() {
-  const farm = farmMode();
-  document.body.dataset.mode = farm ? "farm" : "garden";
-  $("modeGarden").setAttribute("aria-pressed", String(!farm));
-  $("modeFarm").setAttribute("aria-pressed", String(farm));
+  const mode = store.mode || "garden";
+  document.body.dataset.mode = mode;
+  $("modeGarden").setAttribute("aria-pressed", String(mode === "garden"));
+  $("modeFarm").setAttribute("aria-pressed", String(mode === "farm"));
+  $("modePond").setAttribute("aria-pressed", String(mode === "pond"));
+  const look = {
+    garden: "Garten ansehen",
+    farm: "Hof ansehen",
+    pond: "Teich ansehen",
+  };
   $("mapBtn").setAttribute(
     "aria-label",
-    farm ? "Bauernhof ansehen" : "Garten ansehen",
+    mode === "farm"
+      ? "Bauernhof ansehen"
+      : mode === "pond"
+        ? "Teich ansehen"
+        : "Garten ansehen",
   );
-  $("toGarden").textContent = farm ? "Hof ansehen" : "Garten ansehen";
+  $("toGarden").textContent = look[mode];
 }
 
 // A chicken eats a bloom when the child knows its task: it is the next task.
@@ -825,6 +1142,17 @@ export function start() {
       if (e.key === "Enter") {
         e.preventDefault();
         $("again").click();
+      }
+      return;
+    }
+    if ((e.target as Element | null)?.closest("textarea, input")) return;
+    if (pondMode()) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (/^[a-zäöüßA-ZÄÖÜ]$/.test(e.key)) pressPond(e.key);
+      else if (e.key === "Backspace") pressPond("del");
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        pressPond("ok");
       }
       return;
     }
@@ -862,15 +1190,20 @@ export function start() {
     showGarden();
   };
   $("mapBtn").onclick = showGarden;
-  $("toPlay").onclick = $("fToPlay").onclick = () =>
-    scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  $("toPlay").onclick =
+    $("fToPlay").onclick =
+    $("pToPlay").onclick =
+      () => scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   $("modeGarden").onclick = () => setMode("garden");
   $("modeFarm").onclick = () => setMode("farm");
+  $("modePond").onclick = () => setMode("pond");
+  initSpeech();
   initProfiles(activate);
   initMusic();
 
   buildGarden();
   buildFarm(pickFlower);
+  buildPond({ press: pressPond, changed: pondChanged, render });
   showMode();
   buildRows();
   resetIdle();

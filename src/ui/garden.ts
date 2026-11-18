@@ -269,7 +269,9 @@ export function flyDot(dot: HTMLElement, color: string) {
 
 // Shows the garden or the farm, whichever is played.
 export function showGarden() {
-  $(store.mode === "farm" ? "farm" : "garden").scrollIntoView({
+  $(
+    store.mode === "pond" ? "pond" : store.mode === "farm" ? "farm" : "garden",
+  ).scrollIntoView({
     behavior: reduce ? "auto" : "smooth",
   });
 }

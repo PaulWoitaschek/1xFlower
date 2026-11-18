@@ -39,6 +39,8 @@ export interface Farm {
   /** the eggs in the nest, the first one is warmed */
   eggs: Egg[];
   chickens: Chicken[];
+  /** eggs the hens laid while the flock was full, see FLOCK_MAX */
+  basket?: number;
 }
 
 /** right answers that hatch an egg */
@@ -133,16 +135,28 @@ export function pickFarm(farm: Farm, queue: Queue, random = Math.random) {
 export const eggStage = (egg: Egg) =>
   Math.min(3, Math.floor((egg.warmth * 4) / EGG_WARMTH));
 
-export const roomForEgg = (farm: Farm) =>
-  farm.eggs.length < NEST_MAX &&
-  farm.eggs.length + farm.chickens.length < FLOCK_MAX;
+export const flockFull = (farm: Farm) =>
+  farm.eggs.length + farm.chickens.length >= FLOCK_MAX;
 
-// A hen that ate enough lays its egg when the nest has room.
-function lay(farm: Farm, hen: Chicken): boolean {
-  if (!hen.grown || hen.meals < LAY_MEALS || !roomForEgg(farm)) return false;
+export const roomForEgg = (farm: Farm) =>
+  farm.eggs.length < NEST_MAX && !flockFull(farm);
+
+/** where a hen laid her egg */
+export type Laid = "nest" | "basket" | null;
+
+// A hen that ate enough lays its egg when the nest has room. When the flock
+// is full no more chicks hatch, so the egg goes into the basket.
+function lay(farm: Farm, hen: Chicken): Laid {
+  if (!hen.grown || hen.meals < LAY_MEALS) return null;
+  if (flockFull(farm)) {
+    hen.meals = 0;
+    farm.basket = (farm.basket || 0) + 1;
+    return "basket";
+  }
+  if (!roomForEgg(farm)) return null;
   hen.meals = 0;
   farm.eggs.push({ id: uid(), warmth: 0 });
-  return true;
+  return "nest";
 }
 
 // A right answer warms the first egg. A warm egg hatches a chick.
@@ -160,19 +174,21 @@ export function warmEgg(farm: Farm, random = Math.random): Chicken | null {
   };
   farm.chickens.push(chick);
   // a hen that waited for room in the nest lays now
-  for (const hen of farm.chickens) if (lay(farm, hen)) break;
+  for (const hen of farm.chickens) if (lay(farm, hen) === "nest") break;
   return chick;
 }
 
 // A hen that ate enough and waits for room in the nest does not eat.
 export const full = (farm: Farm, c: Chicken) =>
-  c.grown && c.meals >= LAY_MEALS && !roomForEgg(farm);
+  c.grown && c.meals >= LAY_MEALS && !roomForEgg(farm) && !flockFull(farm);
 
 export interface Meal {
   /** the chick is a hen now */
   grown: boolean;
   /** the hen laid an egg */
   egg: boolean;
+  /** the egg went into the basket, because the flock is full */
+  basket?: true;
 }
 
 function eat(farm: Farm, c: Chicken): Meal {
@@ -184,7 +200,9 @@ function eat(farm: Farm, c: Chicken): Meal {
     return { grown: true, egg: false };
   }
   c.meals = Math.min(c.meals, LAY_MEALS);
-  return { grown: false, egg: lay(farm, c) };
+  const laid = lay(farm, c);
+  if (laid === "basket") return { grown: false, egg: true, basket: true };
+  return { grown: false, egg: laid === "nest" };
 }
 
 export function feedHay(farm: Farm, id: string): Meal | null {

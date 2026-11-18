@@ -1,6 +1,7 @@
 import {
   baleSVG,
   barnSVG,
+  basketSVG,
   chickenSVG,
   grassSVG,
   haystackSVG,
@@ -158,6 +159,7 @@ function renderYard() {
     farm.hay,
     farm.eggs,
     farm.chickens,
+    farm.basket,
   ]);
   if (yardKey === key) return;
   yardKey = key;
@@ -195,6 +197,14 @@ function renderYard() {
       ? "Noch " + left + (left === 1 ? " Antwort" : " Antworten")
       : "Das Nest ist leer") +
     "</span></div>" +
+    (farm.basket
+      ? '<div class="basket" title="Eierkorb">' +
+        basketSVG() +
+        "<span>" +
+        farm.basket +
+        (farm.basket === 1 ? " Ei" : " Eier") +
+        "</span></div>"
+      : "") +
     '<div class="flock" id="flock">' +
     (flock ||
       "<p>Wenn du Aufgaben richtig rechnest, schlüpft aus dem Ei ein Küken.</p>") +
@@ -208,6 +218,8 @@ function renderYard() {
 export function mealText(c: Chicken, meal: Meal): string {
   if (meal.grown)
     return "Dein Küken ist jetzt ein " + HEN_NAMES[c.color] + " Huhn!";
+  if (meal.basket)
+    return "Dein Huhn hat ein Ei gelegt! Dein Hühnerstall ist voll, darum kommt es in den Eierkorb.";
   if (meal.egg) return "Dein Huhn hat ein Ei gelegt!";
   if (!c.grown) {
     const left = CHICK_MEALS - c.meals;

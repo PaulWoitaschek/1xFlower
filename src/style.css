@@ -1735,7 +1735,8 @@ body:not([data-mode="pond"]) #keys {
   width: 22px;
   height: auto;
 }
-.nest {
+.nest,
+.basket {
   flex: none;
   display: flex;
   flex-direction: column;
@@ -1744,6 +1745,10 @@ body:not([data-mode="pond"]) #keys {
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--muted);
+}
+.basketsvg {
+  display: block;
+  width: 52px;
 }
 .nestsvg {
   display: block;

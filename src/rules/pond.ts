@@ -81,9 +81,9 @@ export function openLilies(pond: Pond): number {
     .length;
 }
 
-// Errors come back often. A bloom that the child did not write for some days
+// Shared with the orchard. Errors come back often. A bloom that the child did not write for some days
 // comes before the lilies that grow.
-export function pondWeight(fact: Fact | undefined, today: number): number {
+export function wordWeight(fact: Fact | undefined, today: number): number {
   if (!fact || !fact.seen) return 2.5;
   if (fact.wilt) return 12 + Math.min(fact.wrong, 5) * 2;
   if (thirsty(fact, today)) return 8;
@@ -100,7 +100,7 @@ export function pickPond(
   return pickWeighted(
     pondWords(pond).map((word) => word.text),
     queue,
-    (key) => pondWeight(pond.facts[key], today),
+    (key) => wordWeight(pond.facts[key], today),
     random,
   );
 }
@@ -136,7 +136,16 @@ export function tryWord(
   const fact = see(pondOf(garden).facts, play, word.text);
   const verdict = check(word, typed);
   if (!verdict.right) return { right: false, verdict };
+  return grow(garden, play, fact, today);
+}
 
+// A right first answer lets the plant grow, if it can. The orchard uses it too.
+export function grow(
+  garden: Garden,
+  play: Play,
+  fact: Fact,
+  today: number,
+): PondRight {
   const before = fact.lvl;
   const wasWilt = fact.wilt;
   const grows = canGrow(fact, today);
@@ -181,6 +190,17 @@ export function retryWord(
     miss(fact, play, key);
     return { right: false, verdict };
   }
+  return tipRight(garden, play, fact, key);
+}
+
+// A right second try: some points, and the word comes back soon. The orchard
+// uses it too.
+export function tipRight(
+  garden: Garden,
+  play: Play,
+  fact: Fact,
+  key: string,
+): TipRight {
   fact.wrong++;
   play.streak = 0;
   garden.points += TIP_POINTS;
@@ -194,7 +214,7 @@ export function retryWord(
 export interface Resident {
   name: string;
   pic: string;
-  /** the open lilies that bring the animal */
+  /** the open lilies (or ripe trees) that bring the animal */
   at: number;
 }
 
@@ -210,14 +230,17 @@ export const RESIDENTS: Resident[] = [
   { name: "Flamingo", pic: "🦩", at: 50 },
 ];
 
-export function nextResident(open: number): {
+export function nextResident(
+  open: number,
+  residents = RESIDENTS,
+): {
   resident: Resident | null;
   need: number;
 } {
-  const resident = RESIDENTS.find((r) => r.at > open) || null;
+  const resident = residents.find((r) => r.at > open) || null;
   return { resident, need: resident ? resident.at - open : 0 };
 }
 
 // The animal that comes with this number of open lilies.
-export const arrives = (open: number) =>
-  RESIDENTS.find((r) => r.at === open) || null;
+export const arrives = (open: number, residents = RESIDENTS) =>
+  residents.find((r) => r.at === open) || null;

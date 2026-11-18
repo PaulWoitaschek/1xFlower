@@ -7,8 +7,8 @@ export interface Profile {
   flower: number;
 }
 
-/** the garden practices the multiplication, the farm the division, the pond the spelling */
-export type Mode = "garden" | "farm" | "pond";
+/** the garden practices the multiplication, the farm the division, the pond the spelling, the orchard English words */
+export type Mode = "garden" | "farm" | "pond" | "orchard";
 
 export interface Store {
   v: 2;

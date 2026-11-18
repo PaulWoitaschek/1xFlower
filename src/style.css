@@ -31,10 +31,11 @@ body {
   --stem: #4a9a3c;
   --dry: #a88e5c;
   --water: #a9dcf5;
-  /* the three modes in the charts of the stars, checked for color blindness */
+  /* the four modes in the charts of the stars, checked for color blindness */
   --c-garden: #d9465f;
   --c-farm: #c08a12;
   --c-pond: #3f7fd6;
+  --c-orchard: #8a56c9;
   --gold: #f4b323;
   --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -61,6 +62,7 @@ body {
     --c-garden: #d9506a;
     --c-farm: #b5871a;
     --c-pond: #4a8ad8;
+    --c-orchard: #a074dc;
     color-scheme: dark;
   }
 }
@@ -85,6 +87,7 @@ body {
   --c-garden: #d9506a;
   --c-farm: #b5871a;
   --c-pond: #4a8ad8;
+  --c-orchard: #a074dc;
   color-scheme: dark;
 }
 
@@ -1409,6 +1412,8 @@ button:focus-visible {
   padding: 4px 10px;
   font-family: var(--display);
   font-weight: 600;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .big-go {
   font-family: var(--display);
@@ -1599,10 +1604,10 @@ canvas#fx {
   z-index: 30;
 }
 
-/* the mode switch: the garden practices the multiplication, the farm the division, the pond the spelling */
+/* the mode switch: the garden practices the multiplication, the farm the division, the pond the spelling, the orchard English words */
 .modes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
   border-radius: 16px;
@@ -1635,14 +1640,16 @@ body:not([data-mode="garden"]) #map,
 body:not([data-mode="farm"]) #farm,
 body:not([data-mode="farm"]) #fmap,
 body:not([data-mode="pond"]) #pond,
-body:not([data-mode="pond"]) #pmap {
+body:not([data-mode="pond"]) #pmap,
+body:not([data-mode="orchard"]) #orchard,
+body:not([data-mode="orchard"]) #omap {
   display: none;
 }
-body[data-mode="pond"] .eq,
-body[data-mode="pond"] #pad,
-body:not([data-mode="pond"]) #cue,
-body:not([data-mode="pond"]) #word,
-body:not([data-mode="pond"]) #keys {
+body:is([data-mode="pond"], [data-mode="orchard"]) :is(.eq, #pad),
+body:is([data-mode="garden"], [data-mode="farm"]) :is(#cue, #word, #keys),
+body:not([data-mode="orchard"]) #opts,
+body[data-mode="orchard"][data-task="write"] #opts,
+body[data-mode="orchard"]:not([data-task="write"]) :is(#word, #keys) {
   display: none;
 }
 
@@ -2366,19 +2373,221 @@ body[data-mode="pond"] .hero .fl {
   cursor: default;
 }
 .pond.onlyown #plevels,
-.pond.onlyown #pstrategies {
+.pond.onlyown #pstrategies,
+.orchard.onlyown #ogroups {
   opacity: 0.4;
+}
+
+/* the orchard: English words, one fruit tree for each word */
+.cue.en {
+  flex-wrap: wrap;
+  padding: 12px 14px;
+}
+.cue.en .cuetext {
+  font: 600 clamp(1.7rem, 8cqi, 2.4rem) / 1.15 var(--display);
+}
+.cue.still {
+  cursor: default;
+}
+.cue.still .cueear,
+.cue.mute .cueear {
+  display: none;
+}
+.cue.still .cuetext {
+  font-size: 1.15rem;
+}
+.cue.still .cuepic {
+  font-size: 2.6rem;
+}
+.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  touch-action: manipulation;
+}
+.opt {
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 12px;
+  font: 700 1.05rem/1.25 var(--body);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--key);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--line);
+}
+.opt:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+.opt:disabled {
+  cursor: default;
+  color: var(--muted);
+}
+.opt.right {
+  background: color-mix(in srgb, var(--leaf) 28%, var(--card));
+  border-color: var(--leaf);
+  color: var(--ink);
+}
+.opt.wrong {
+  background: color-mix(in srgb, var(--berry) 22%, var(--card));
+  border-color: var(--berry);
+  color: var(--ink);
+  text-decoration: line-through;
+}
+/* a long text wraps in its line, and the letters stay big enough */
+.word.long {
+  display: flex;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+  font-size: min(calc(125cqi / var(--n, 7)), 2.6rem);
+}
+.word.long .typed {
+  min-width: 0;
+  white-space: pre-wrap;
+}
+.keys .sign {
+  flex: 1;
+}
+.keys .space {
+  flex: 4;
+  font-family: var(--body);
+  font-size: 1rem;
+  font-weight: 800;
+}
+.sol .more {
+  color: var(--muted);
+  font-style: normal;
+}
+.feedback .pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 600 1.15rem/1.25 var(--display);
+  overflow-wrap: anywhere;
+}
+.feedback .pair .eqs {
+  color: var(--muted);
+}
+.feedback.bad .pair .eqs {
+  color: var(--berry);
+}
+.feedback .big .pair {
+  font-size: 1.25rem;
+}
+.listname {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+#ogroups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#ogroups .chip,
+#owrite,
+#oOwnOnly {
+  height: auto;
+  min-height: 36px;
+  padding: 4px 12px;
+}
+.bed.grass {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #9bd36a 55%, var(--card)),
+    color-mix(in srgb, #9bd36a 35%, var(--bed))
+  );
+}
+.omap {
+  background: color-mix(in srgb, #9bd36a 35%, var(--bed));
+}
+
+/* fruit tree: a seedling, a small tree, a blossom and the fruits, grown by the stage class of a parent */
+.tree .ground {
+  fill: var(--stem);
+  opacity: 0.35;
+}
+.tree .shoot {
+  fill: none;
+  stroke: var(--stem);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.tree .leaf,
+.tree .crown {
+  fill: var(--stem);
+}
+.tree .trunk {
+  fill: var(--soil);
+}
+.tree .blossom,
+.tree .fruits {
+  opacity: 0;
+  transform-origin: 20px 20px;
+  transform: scale(0);
+  transition:
+    transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s;
+}
+.tree .sprout {
+  transform-origin: 20px 40px;
+  transform: scale(0);
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tree .grow {
+  transform-origin: 20px 40px;
+  transform: scale(0);
+  transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.u .tree .sprout {
+  transform: scale(0.55);
+}
+.l0 .tree .sprout,
+.l1 .tree .sprout {
+  transform: none;
+}
+.l2 .tree .grow {
+  transform: scale(0.62);
+}
+.l3 .tree .grow,
+.l4 .tree .grow {
+  transform: none;
+}
+.l3 .tree .blossom,
+.l4 .tree .fruits {
+  opacity: 1;
+  transform: none;
+}
+.wilt .tree .sprout {
+  transform: scale(0.8) rotate(-14deg);
+}
+.wilt .tree .shoot {
+  stroke: var(--dry);
+}
+.wilt .tree .leaf {
+  fill: var(--dry);
+}
+.bloomed .tree .fruits {
+  animation: bloom 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @media (min-width: 841px) {
   #toGarden,
   #toPlay,
   #fToPlay,
-  #pToPlay {
+  #pToPlay,
+  #oToPlay {
     display: none;
   }
   /* the keyboard needs width */
-  body[data-mode="pond"] .main {
+  body:is([data-mode="pond"], [data-mode="orchard"]) .main {
     grid-template-columns: minmax(0, 640px) minmax(0, 1fr);
   }
 }
@@ -2426,7 +2635,7 @@ body[data-mode="pond"] .hero .fl {
     height: auto;
   }
   /* the map of the pond is small, so the lily keeps its height */
-  body[data-mode="pond"] .hero {
+  body:is([data-mode="pond"], [data-mode="orchard"]) .hero {
     min-height: 124px;
   }
   .hero .tag {
@@ -2557,13 +2766,13 @@ body[data-mode="pond"] .hero .fl {
     overflow-y: auto;
   }
   /* the pond has no 10x10 bed: its card is a column that scrolls */
-  body[data-mode="pond"] .main {
+  body:is([data-mode="pond"], [data-mode="orchard"]) .main {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
-  body[data-mode="pond"] .task {
+  body:is([data-mode="pond"], [data-mode="orchard"]) .task {
     flex: 1 0 auto;
   }
-  body[data-mode="pond"] .scene {
+  body:is([data-mode="pond"], [data-mode="orchard"]) .scene {
     min-height: 80px;
     max-height: 170px;
   }
@@ -2760,6 +2969,10 @@ body[data-mode="pond"] .hero .fl {
 .slegend i.c-pond {
   background: var(--c-pond);
 }
+.sbar i.c-orchard,
+.slegend i.c-orchard {
+  background: var(--c-orchard);
+}
 .sparents {
   border-top: 1px solid var(--line);
   padding-top: 12px;
@@ -2868,6 +3081,10 @@ body[data-mode="pond"] .hero .fl {
 .schart .dot.c-pond {
   fill: var(--c-pond);
 }
+.schart path.c-orchard,
+.schart .dot.c-orchard {
+  fill: var(--c-orchard);
+}
 .schart path.line {
   fill: none;
   stroke-width: 2;
@@ -2882,6 +3099,9 @@ body[data-mode="pond"] .hero .fl {
 }
 .schart path.line.c-pond {
   stroke: var(--c-pond);
+}
+.schart path.line.c-orchard {
+  stroke: var(--c-orchard);
 }
 .schart .dot {
   stroke: var(--card);
@@ -2942,6 +3162,9 @@ body[data-mode="pond"] .hero .fl {
 }
 .stricky span.c-pond {
   border-left-color: var(--c-pond);
+}
+.stricky span.c-orchard {
+  border-left-color: var(--c-orchard);
 }
 .stricky b {
   font-family: var(--display);

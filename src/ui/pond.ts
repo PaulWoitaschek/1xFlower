@@ -18,11 +18,23 @@ import {
   type Strategy,
   type Word,
 } from "../rules/words";
+import {
+  buildOwn,
+  chips,
+  esc,
+  letters,
+  renderKeys,
+  renderResidents,
+  renderStageHero,
+  showTyped,
+  useKeys,
+  type Layout,
+} from "./common";
 import { $, mk, reduce } from "./dom";
 import { flyDot } from "./garden";
 import { sfx } from "./sound";
 import { hush, say } from "./speech";
-import { garden, save, sess, store } from "./state";
+import { garden, sess, store } from "./state";
 
 export const WATER = "#5DB7E8";
 /** the time a word to remember shows before the child writes it */
@@ -43,7 +55,15 @@ const SIGNS: Record<Strategy, string> = {
   merken: "!",
 };
 
-const KEY_ROWS = ["qwertzuiopü", "asdfghjklöä", "yxcvbnmß"];
+const KEYS: Layout = {
+  id: "pond",
+  rows: ["qwertzuiopü", "asdfghjklöä", "yxcvbnmß"],
+  last: [
+    { label: "🔊 Anhören", key: "say", cls: "hear" },
+    { label: "OK", key: "ok", cls: "go" },
+  ],
+  signs: "ß",
+};
 
 interface Hooks {
   /** a key of the keyboard */
@@ -56,21 +76,10 @@ interface Hooks {
 let hooks: Hooks;
 let shown = "";
 let cueKey = "";
-let shiftShown = false;
 let timers: ReturnType<typeof setTimeout>[] = [];
 const dots: Record<string, HTMLElement> = {};
 
 const pondMode = () => store.mode === "pond";
-
-const esc = (text: string) =>
-  text.replace(/[&<>"]/g, (ch) => "&#" + ch.charCodeAt(0) + ";");
-
-// The letters of a word, the marked ones stand out.
-function letters(text: string, marked: (index: number) => boolean): string {
-  return [...text]
-    .map((ch, i) => (marked(i) ? "<b>" + esc(ch) + "</b>" : esc(ch)))
-    .join("");
-}
 
 // A word in syllables, each one with its arc below.
 const arcs = (parted: string) =>
@@ -102,142 +111,58 @@ export function inPond(text: string): boolean {
   return pool(pondOf(garden)).some((word) => word.text === text);
 }
 
-function chip(text: string, pressed: boolean, sign?: string) {
-  const el = mk("button", "chip");
-  if (sign) el.appendChild(mk("b", null, sign));
-  el.appendChild(document.createTextNode(text));
-  el.setAttribute("aria-pressed", String(pressed));
-  return el;
-}
-
-// One chip for each value. The last chosen value stays.
-function chips<T>(
-  id: string,
-  prefix: string,
-  values: T[],
-  name: (value: T) => string,
-  chosen: () => T[],
-  choose: (next: T[]) => void,
-  sign?: (value: T) => string,
-) {
-  const box = $(id);
-  box.innerHTML = "";
-  for (const value of values) {
-    const el = chip(name(value), chosen().includes(value), sign?.(value));
-    el.id = prefix + value;
-    el.onclick = () => {
-      const now = chosen();
-      if (now.includes(value)) {
-        if (now.length === 1) return;
-        choose(now.filter((v) => v !== value));
-      } else choose(values.filter((v) => v === value || now.includes(v)));
-      el.setAttribute("aria-pressed", String(chosen().includes(value)));
-      save();
-      hooks.changed();
-    };
-    box.appendChild(el);
-  }
-}
+let showOwn: () => void = () => {};
 
 // The chips and the words from school of the active profile.
 export function buildPondSettings() {
   const pond = () => pondOf(garden);
   chips(
-    "plevels",
+    $("plevels"),
     "plevel",
     LEVELS,
     (level) => LEVEL_NAMES[level],
     () => pond().levels,
     (next) => (pond().levels = next),
+    () => hooks.changed(),
   );
   chips(
-    "pstrategies",
+    $("pstrategies"),
     "pstrategy",
     STRATEGIES,
     (strategy) => STRATEGY_NAMES[strategy],
     () => pond().strategies,
     (next) => (pond().strategies = next),
+    () => hooks.changed(),
     (strategy) => SIGNS[strategy],
   );
-  $<HTMLTextAreaElement>("ownWords").value = pond().own.join("\n");
-  $("ownNote").textContent = "";
-  renderOwnOnly();
-}
-
-function renderOwnOnly() {
-  const pond = pondOf(garden);
-  const only = $<HTMLButtonElement>("ownOnly");
-  only.disabled = !pond.own.length;
-  only.setAttribute("aria-pressed", String(pond.onlyOwn && !!pond.own.length));
-  $("pond").classList.toggle("onlyown", pond.onlyOwn && !!pond.own.length);
+  showOwn();
 }
 
 export function buildPond(h: Hooks) {
   hooks = h;
-  const keys = $("keys");
-  KEY_ROWS.forEach((row, r) => {
-    const line = mk("div", "krow");
-    if (r === 2) {
-      const shift = mk("button", "wide shift", "⇧");
-      shift.dataset.k = "shift";
-      shift.setAttribute("aria-label", "Großbuchstabe");
-      shift.setAttribute("aria-pressed", "false");
-      line.appendChild(shift);
-    }
-    for (const letter of row) {
-      const key = mk("button", "letter", letter);
-      key.dataset.k = letter;
-      line.appendChild(key);
-    }
-    if (r === 2) {
-      const del = mk("button", "wide del", "⌫");
-      del.dataset.k = "del";
-      del.setAttribute("aria-label", "Löschen");
-      line.appendChild(del);
-    }
-    keys.appendChild(line);
-  });
-  const last = mk("div", "krow");
-  const hear = mk("button", "hear", "🔊 Anhören");
-  hear.dataset.k = "say";
-  const ok = mk("button", "go", "OK");
-  ok.dataset.k = "ok";
-  last.append(hear, ok);
-  keys.appendChild(last);
-  keys.addEventListener("click", (e) => {
-    const key = (e.target as Element).closest("button");
-    if (key) hooks.press(key.dataset.k!);
-  });
   $("cue").onclick = () => hooks.press("say");
-
-  $("ownSave").onclick = () => {
-    const pond = pondOf(garden);
-    const input = $<HTMLTextAreaElement>("ownWords");
-    pond.own = parseOwn(input.value);
-    if (!pond.own.length) pond.onlyOwn = false;
-    input.value = pond.own.join("\n");
-    const n = pond.own.length;
-    $("ownNote").textContent = n
-      ? n + (n === 1 ? " Lernwort" : " Lernwörter") + " im Teich."
-      : "Keine Lernwörter im Teich.";
-    renderOwnOnly();
-    save();
-    sfx("tap");
-    hooks.changed();
-  };
-  $("ownOnly").onclick = () => {
-    const pond = pondOf(garden);
-    if (!pond.own.length) return;
-    pond.onlyOwn = !pond.onlyOwn;
-    renderOwnOnly();
-    save();
-    hooks.changed();
-  };
+  showOwn = buildOwn(
+    {
+      card: "pond",
+      words: "ownWords",
+      note: "ownNote",
+      save: "ownSave",
+      only: "ownOnly",
+    },
+    () => pondOf(garden),
+    parseOwn,
+    (n) =>
+      n
+        ? n + (n === 1 ? " Lernwort" : " Lernwörter") + " im Teich."
+        : "Keine Lernwörter im Teich.",
+    () => hooks.changed(),
+  );
   buildPondSettings();
 }
 
 // Stops the voice, the frog and the word to remember of the last word.
 export function quietPond() {
+  cueKey = "";
   for (const timer of timers) clearTimeout(timer);
   timers = [];
   sess.flash = false;
@@ -269,7 +194,7 @@ const TIP_TEXT = {
   merken: "Ein Merkwort! Schau genau hin, dann schreib es.",
 };
 
-const tipName = (sign: string, name: string) =>
+export const tipName = (sign: string, name: string) =>
   '<span class="tipname"><b>' + sign + "</b>" + name + "</span>";
 
 // The tip after a wrong first try: the strategy that helps, and its help word.
@@ -361,27 +286,23 @@ export function runTip(word: Word, verdict: Verdict) {
   if (speak) say(help ? [help.replaceAll("-", "")] : [word.text]);
 }
 
-// The right word after two wrong tries. The wrong letters stand out.
-export function solutionHtml(word: Word, verdict: Verdict): string {
+// The right text after two wrong tries. The wrong letters stand out.
+export function solutionLine(text: string, wrong: number[], note: string) {
   return (
     '<span class="big sol">' +
-    letters(word.text, (i) => verdict.wrong.includes(i)) +
-    '</span><span class="sub">Schreib das Wort ab. Es kommt bald wieder.</span>'
+    letters(text, (i) => wrong.includes(i)) +
+    '</span><span class="sub">' +
+    note +
+    "</span>"
   );
 }
 
-function renderKeys() {
-  if (shiftShown === sess.shift) return;
-  shiftShown = sess.shift;
-  const keys = $("keys");
-  keys.querySelectorAll<HTMLElement>(".letter").forEach((key) => {
-    const k = key.dataset.k!;
-    key.textContent = sess.shift && k !== "ß" ? k.toUpperCase() : k;
-  });
-  keys
-    .querySelector(".shift")!
-    .setAttribute("aria-pressed", String(sess.shift));
-}
+export const solutionHtml = (word: Word, verdict: Verdict) =>
+  solutionLine(
+    word.text,
+    verdict.wrong,
+    "Schreib das Wort ab. Es kommt bald wieder.",
+  );
 
 // The picture and the sentence of the word, the typed letters and the keys.
 export function renderPondTask() {
@@ -389,49 +310,38 @@ export function renderPondTask() {
   const word = wordOf(pond, sess.cur);
   if (cueKey !== sess.cur) {
     cueKey = sess.cur;
+    $("cue").className = "cue";
+    $("cueText").removeAttribute("lang");
     $("cuePic").textContent = word.pic || "";
     $("cuePic").hidden = !word.pic;
     $("cueText").textContent = gap(word) || "Hör genau hin!";
   }
-  const el = $("word");
   const text = sess.flash ? word.text : sess.input;
-  el.className = "word" + (sess.flash ? " flash" : "") + (text ? "" : " empty");
-  el.style.setProperty("--n", String(Math.max(7, text.length + 1)));
-  el.innerHTML = sess.flash
-    ? '<span class="typed">' +
-      letters(word.text, (i) =>
-        word.spots.some((s) => i >= s.at && i < s.at + s.len),
-      ) +
-      "</span>"
-    : '<span class="typed">' + esc(text) + '</span><i class="caret"></i>';
+  showTyped(
+    sess.flash
+      ? '<span class="typed">' +
+          letters(word.text, (i) =>
+            word.spots.some((s) => i >= s.at && i < s.at + s.len),
+          ) +
+          "</span>"
+      : '<span class="typed">' + esc(text) + '</span><i class="caret"></i>',
+    text.length,
+    (sess.flash ? " flash" : "") + (text ? "" : " empty"),
+  );
+  useKeys(KEYS, hooks.press);
   renderKeys();
   renderPondHero();
 }
 
 function renderPondHero() {
-  const hero = $("hero");
-  const moment = sess.moment;
   const pond = pondOf(garden);
-  hero.className =
-    "hero " +
-    lilyStage(pond, sess.cur) +
-    (sess.bloom === sess.cur ? " bloomed" : "") +
-    (moment ? " moment m-" + moment.type : "");
-  const heroKey = "pond|" + sess.cur;
-  if (sess.heroKey !== heroKey) {
-    sess.heroKey = heroKey;
-    hero.innerHTML =
-      '<div class="pot">' +
-      lilySVG(sess.cur) +
-      '</div><div class="stages" aria-hidden="true"><i></i><i></i><i></i><i class="top"></i></div><span class="tag"></span>';
-  }
   const fact = pond.facts[sess.cur];
-  const level = fact && fact.seen ? fact.lvl : 0;
-  hero.querySelectorAll(".stages i").forEach((dot, i) => {
-    dot.classList.toggle("on", i < level);
-    dot.classList.toggle("pulse", !!moment && sess.grew && i === level - 1);
-  });
-  if (moment) hero.querySelector(".tag")!.textContent = moment.text;
+  renderStageHero(
+    "pond",
+    lilySVG,
+    lilyStage(pond, sess.cur),
+    fact && fact.seen ? fact.lvl : 0,
+  );
 }
 
 /** the most dots on the small map of the pond */
@@ -501,21 +411,7 @@ export function renderPond() {
     box.appendChild(cell);
   });
   $("pondEmpty").hidden = box.childElementCount > 0;
-  $("residents").innerHTML = RESIDENTS.map((r) => {
-    const got = everOpen >= r.at;
-    return (
-      '<span class="gift' +
-      (got ? " got" : "") +
-      (r.name === sess.newResident ? " new" : "") +
-      '" title="' +
-      r.name +
-      '"><span class="rpic">' +
-      r.pic +
-      "</span>" +
-      (got ? r.name : r.at + " Seerosen") +
-      "</span>"
-    );
-  }).join("");
+  renderResidents("residents", RESIDENTS, everOpen, "Seerosen");
 }
 
 // On phones, a dot flies from the task's lily to its place on the map.

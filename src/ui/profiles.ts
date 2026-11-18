@@ -33,6 +33,9 @@ export function updateWho() {
   $("gTitle").textContent = p ? "Garten von " + p.name : "Mein Garten";
   $("fTitle").textContent = p ? "Bauernhof von " + p.name : "Mein Bauernhof";
   $("pondTitle").textContent = p ? "Teich von " + p.name : "Mein Teich";
+  $("orchardTitle").textContent = p
+    ? "Obstwiese von " + p.name
+    : "Meine Obstwiese";
 }
 
 export function openProfiles() {

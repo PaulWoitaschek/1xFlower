@@ -57,6 +57,9 @@
               <b>:</b> Bauernhof
             </button>
             <button id="modePond" aria-pressed="false"><b>Abc</b> Teich</button>
+            <button id="modeOrchard" aria-pressed="false">
+              <b>En</b> Obstwiese
+            </button>
           </div>
           <div>
             <div class="roundlabel">
@@ -71,6 +74,7 @@
                 <span class="map" id="map"></span>
                 <span class="map fmap" id="fmap"></span>
                 <span class="map pmap" id="pmap"></span>
+                <span class="map omap" id="omap"></span>
                 <span id="mapCap"></span>
               </button>
               <div class="hero" id="hero"></div>
@@ -90,6 +94,7 @@
             <div class="word" id="word" aria-live="polite"></div>
           </div>
           <div class="feedback" id="fb" aria-live="polite"></div>
+          <div class="opts" id="opts"></div>
           <div class="pad" id="pad">
             <button data-k="1">1</button>
             <button data-k="2">2</button>
@@ -198,6 +203,68 @@
                 </button>
               </div>
               <p class="fnote" id="ownNote" aria-live="polite"></p>
+            </div>
+          </div>
+        </aside>
+
+        <aside
+          class="garden pond orchard"
+          id="orchard"
+          aria-label="Meine Obstwiese"
+        >
+          <div class="ghead">
+            <h2 id="orchardTitle">Meine Obstwiese</h2>
+            <button class="btn" id="oToPlay">Weiter üben</button>
+          </div>
+          <p class="gcount" id="orchardCount">0 von 0 Bäumen tragen Früchte</p>
+          <div class="bedbox">
+            <div class="bed grass">
+              <div class="lilies trees" id="trees"></div>
+              <p class="pondempty" id="orchardEmpty">
+                Jedes Wort, das du übst, wird ein Baum.
+              </p>
+            </div>
+          </div>
+          <div class="gside">
+            <div
+              class="gifts"
+              id="oResidents"
+              aria-label="Tiere auf der Obstwiese"
+            ></div>
+            <div class="settings">
+              <h3>Welche Wörter üben?</h3>
+              <div id="ogroups"></div>
+              <h3>Schreiben</h3>
+              <div class="chips">
+                <button class="chip" id="owrite" aria-pressed="true">
+                  Wörter auch schreiben
+                </button>
+              </div>
+              <h3>
+                <label for="oOwnWords">Meine Wörter aus der Schule</label>
+              </h3>
+              <textarea
+                class="pinput ownwords"
+                id="oOwnWords"
+                rows="4"
+                autocapitalize="off"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="apple = Apfel&#10;colour / color = Farbe"
+              ></textarea>
+              <p class="fhint">
+                Schreib die Wörter aus der Schule hier hinein, eins pro Zeile:
+                erst englisch, dann deutsch, mit einem Gleichheitszeichen. Mit
+                einem Schrägstrich nennst du noch ein richtiges Wort: colour /
+                color = Farbe.
+              </p>
+              <div class="row">
+                <button class="btn" id="oOwnSave">Wörter speichern</button>
+                <button class="chip" id="oOwnOnly" aria-pressed="false">
+                  Nur meine Wörter
+                </button>
+              </div>
+              <p class="fnote" id="oOwnNote" aria-live="polite"></p>
             </div>
           </div>
         </aside>

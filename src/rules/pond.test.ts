@@ -9,7 +9,7 @@ import {
   openLilies,
   pickPond,
   pondOf,
-  pondWeight,
+  wordWeight,
   pondWords,
   retryWord,
   TIP_POINTS,
@@ -90,20 +90,20 @@ describe("wordOf", () => {
   });
 });
 
-describe("pondWeight", () => {
+describe("wordWeight", () => {
   it("asks errors most often", () => {
-    const wilt = pondWeight(fact(0, { wilt: true, wrong: 1 }), TODAY);
-    expect(wilt).toBeGreaterThan(pondWeight(fact(0), TODAY));
+    const wilt = wordWeight(fact(0, { wilt: true, wrong: 1 }), TODAY);
+    expect(wilt).toBeGreaterThan(wordWeight(fact(0), TODAY));
   });
 
   it("asks a lily that rests today rarely", () => {
-    expect(pondWeight(fact(2, { grown: TODAY }), TODAY)).toBe(0.5);
+    expect(wordWeight(fact(2, { grown: TODAY }), TODAY)).toBe(0.5);
   });
 
   it("asks a bloom that waited for some days before the lilies that grow", () => {
     const waited = fact(4, { watered: TODAY - 3, gap: 0 });
-    expect(pondWeight(waited, TODAY)).toBeGreaterThan(
-      pondWeight(fact(0), TODAY),
+    expect(wordWeight(waited, TODAY)).toBeGreaterThan(
+      wordWeight(fact(0), TODAY),
     );
   });
 });

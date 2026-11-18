@@ -1121,6 +1121,7 @@ function showMode() {
     garden: "Garten ansehen",
     farm: "Hof ansehen",
     pond: "Teich ansehen",
+    orchard: "Obstwiese ansehen", // placeholder, the UI of the orchard follows
   };
   $("mapBtn").setAttribute(
     "aria-label",

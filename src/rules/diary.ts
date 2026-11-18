@@ -1,6 +1,7 @@
 import type { Fact, Garden } from "./garden";
 import { bloomCount } from "./garden";
 import { farmOf, hayPatches } from "./farm";
+import { ripeTrees, orchardOf } from "./orchard";
 import { openLilies, pondOf } from "./pond";
 import type { Mode } from "./storage";
 
@@ -17,18 +18,19 @@ export interface Tally {
   ms: number;
 }
 
-/** what blooms: the blooms of the garden, the hay of the farm, the open lilies of the pond */
+/** what blooms: the blooms of the garden, the hay of the farm, the open lilies of the pond, the ripe trees of the orchard */
 export type Done = Record<Mode, number>;
 
 export interface Day {
   garden?: Tally;
   farm?: Tally;
   pond?: Tally;
+  orchard?: Tally;
   /** what blooms at the last answer of the day */
   done?: Done;
 }
 
-export const MODES: Mode[] = ["garden", "farm", "pond"];
+export const MODES: Mode[] = ["garden", "farm", "pond", "orchard"];
 
 /** the tasks of a day that bring the first, second and third star */
 export const STAR_TASKS = [10, 30, 50];
@@ -46,6 +48,7 @@ export function doneOf(garden: Garden): Done {
     garden: bloomCount(garden),
     farm: hayPatches(farmOf(garden)),
     pond: openLilies(pondOf(garden)),
+    orchard: ripeTrees(orchardOf(garden)),
   };
 }
 
@@ -138,6 +141,15 @@ export function span(garden: Garden, last: number, count: number): Span {
   return out;
 }
 
+// A day saved before a mode existed has no value for it: it counts 0.
+const full = (done: Partial<Done>): Done => ({
+  garden: 0,
+  farm: 0,
+  pond: 0,
+  orchard: 0,
+  ...done,
+});
+
 // What bloomed on each of the `count` days that end on `today`. A day without
 // practice keeps the value of the day before, and days before the first entry
 // of the diary are null.
@@ -153,10 +165,10 @@ export function curve(
     .map(Number)
     .filter((day) => day < first && days[day].done)
     .sort((x, y) => y - x)[0];
-  let last: Done | null = before == null ? null : days[before].done!;
+  let last = before == null ? null : full(days[before].done!);
   const out = [];
   for (let day = first; day <= today; day++) {
-    if (days[day]?.done) last = days[day].done!;
+    if (days[day]?.done) last = full(days[day].done!);
     out.push(last);
   }
   return out;
@@ -219,6 +231,7 @@ export function tricky(garden: Garden, max = 8): Tricky[] {
   add("garden", garden.facts);
   if (garden.farm) add("farm", garden.farm.facts);
   if (garden.pond) add("pond", garden.pond.facts);
+  if (garden.orchard) add("orchard", garden.orchard.facts);
   return all
     .sort(
       (x, y) =>

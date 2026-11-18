@@ -17,6 +17,7 @@ import {
   type Day,
 } from "../rules/diary";
 import { divKey } from "../rules/farm";
+import { orchardOf, orchardWords } from "../rules/orchard";
 import { pondOf, pondWords } from "../rules/pond";
 import type { Mode } from "../rules/storage";
 import { dayOf, factors, keyOf } from "../rules/garden";
@@ -31,11 +32,13 @@ const NAMES: Record<Mode, string> = {
   garden: "Garten",
   farm: "Bauernhof",
   pond: "Teich",
+  orchard: "Obstwiese", // placeholder name
 };
 const WHAT: Record<Mode, string> = {
   garden: "Blüten",
   farm: "Heu",
   pond: "Seerosen",
+  orchard: "Bäume", // placeholder: the ripe trees
 };
 const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const RANGES = [
@@ -171,6 +174,7 @@ function canPart() {
     garden: 100,
     farm: 100,
     pond: pondWords(pondOf(garden)).length,
+    orchard: orchardWords(orchardOf(garden)).length,
   };
   for (const mode of MODES) {
     const total = Math.max(totals[mode], done[mode]);

@@ -16,6 +16,7 @@ import {
 import { divKey, farmOf } from "./farm";
 import { gardenWith, row } from "./fixtures";
 import { freshGarden, keyOf, type Garden } from "./garden";
+import { orchardOf } from "./orchard";
 import { pondOf } from "./pond";
 
 const DAY = 20_000;
@@ -54,7 +55,12 @@ describe("note", () => {
       grown: 0,
     };
     note(garden, "garden", true, 1000, DAY);
-    expect(garden.days![DAY].done).toEqual({ garden: 10, farm: 1, pond: 0 });
+    expect(garden.days![DAY].done).toEqual({
+      garden: 10,
+      farm: 1,
+      pond: 0,
+      orchard: 0,
+    });
   });
 
   it("forgets the days that are too old", () => {
@@ -172,8 +178,8 @@ describe("curve", () => {
     const garden = gardenWith(row(3, 4));
     note(garden, "garden", true, 1000, DAY - 30);
     expect(curve(garden, DAY, 2)).toEqual([
-      { garden: 10, farm: 0, pond: 0 },
-      { garden: 10, farm: 0, pond: 0 },
+      { garden: 10, farm: 0, pond: 0, orchard: 0 },
+      { garden: 10, farm: 0, pond: 0, orchard: 0 },
     ]);
   });
 });
@@ -217,5 +223,61 @@ describe("tricky", () => {
 
   it("leaves out the tasks without errors", () => {
     expect(tricky(gardenWith(row(2, 4)))).toEqual([]);
+  });
+});
+
+describe("the orchard in the diary", () => {
+  it("counts the tasks and the ripe trees", () => {
+    const garden = freshGarden();
+    orchardOf(garden).facts["city"] = {
+      lvl: 4,
+      seen: 4,
+      right: 4,
+      wrong: 0,
+      wilt: false,
+      grown: 0,
+    };
+    note(garden, "orchard", true, 2000, DAY);
+    expect(garden.days![DAY].orchard).toEqual({ n: 1, right: 1, ms: 2000 });
+    expect(garden.days![DAY].done).toEqual({
+      garden: 0,
+      farm: 0,
+      pond: 0,
+      orchard: 1,
+    });
+    expect(starsOf(garden.days![DAY])).toBe(0);
+  });
+
+  it("counts a day saved before the orchard as 0 trees in the curve", () => {
+    const garden = freshGarden();
+    garden.days = {
+      [DAY - 1]: {
+        garden: { n: 1, right: 1, ms: 1 },
+        done: { garden: 3, farm: 1, pond: 2 } as never,
+      },
+    };
+    note(garden, "orchard", true, 1000, DAY);
+    const points = curve(garden, DAY, 3);
+    expect(points[0]).toBeNull();
+    expect(points[1]).toEqual({ garden: 3, farm: 1, pond: 2, orchard: 0 });
+    expect(points[2]!.orchard).toBe(0);
+    // also when the old day lies before the curve
+    expect(curve(garden, DAY - 1, 1)[0]!.orchard).toBe(0);
+    expect(curve(garden, DAY + 5, 2)[0]!.orchard).toBe(0);
+  });
+
+  it("lists the tricky words of the orchard", () => {
+    const garden = freshGarden();
+    orchardOf(garden).facts["city"] = {
+      lvl: 0,
+      seen: 2,
+      right: 0,
+      wrong: 2,
+      wilt: true,
+      grown: 0,
+    };
+    expect(tricky(garden)).toEqual([
+      { key: "city", mode: "orchard", wrong: 2, seen: 2, wilt: true },
+    ]);
   });
 });

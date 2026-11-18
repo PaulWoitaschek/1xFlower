@@ -1,5 +1,6 @@
 import type { Day } from "./diary";
 import type { Farm } from "./farm";
+import type { Orchard } from "./orchard";
 import type { Pond } from "./pond";
 
 export interface Fact {
@@ -36,6 +37,8 @@ export interface Garden {
   farm?: Farm;
   /** the pond with the spelling, see pondOf */
   pond?: Pond;
+  /** the orchard with the English words, see orchardOf */
+  orchard?: Orchard;
   /** the days of practice, by the day number of dayOf, see diaryOf */
   days?: Record<number, Day>;
 }

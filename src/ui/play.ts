@@ -88,6 +88,7 @@ import {
   openProfiles,
   updateWho,
 } from "./profiles";
+import { initFullscreen } from "./fullscreen";
 import { initMusic, syncMusic } from "./music";
 import { sfx } from "./sound";
 import { initSpeech, say } from "./speech";
@@ -1200,6 +1201,7 @@ export function start() {
   initSpeech();
   initProfiles(activate);
   initMusic();
+  initFullscreen();
 
   buildGarden();
   buildFarm(pickFlower);

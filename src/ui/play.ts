@@ -36,6 +36,7 @@ import {
   tryWord,
   wordOf,
 } from "../rules/pond";
+import { note, starsOf } from "../rules/diary";
 import { claimGifts, nextGift } from "../rules/gifts";
 import { nothingGrows, pickNext } from "../rules/pick";
 import { upgrade, type Mode } from "../rules/storage";
@@ -89,6 +90,7 @@ import {
   updateWho,
 } from "./profiles";
 import { initFullscreen } from "./fullscreen";
+import { closeStars, initStars, renderStarCount, starsOpen } from "./progress";
 import { initMusic, syncMusic } from "./music";
 import { sfx } from "./sound";
 import { initSpeech, say } from "./speech";
@@ -282,6 +284,19 @@ function bloomParty(big: boolean) {
   }
 }
 
+// The first answer to a task counts in the diary. A new star of the day
+// makes the star in the header jump.
+function noteAnswer(right: boolean) {
+  const day = today();
+  const before = starsOf(garden.days?.[day]);
+  note(garden, store.mode || "garden", right, performance.now() - sess.t0, day);
+  if (starsOf(garden.days?.[day]) > before)
+    setTimeout(() => {
+      replay($("starBtn"), "jump");
+      sfx("streak");
+    }, 700);
+}
+
 // The answer to the current task.
 const solution = (key: string) => {
   if (farmMode()) return quotientOf(key);
@@ -318,6 +333,7 @@ function submit() {
   const [a, b] = factors(sess.cur);
   const product = a * b;
   const result = answer(garden, sess, sess.cur, value, fast, today());
+  noteAnswer(result.right);
   if (!result.right) {
     setFb(
       "bad",
@@ -444,6 +460,7 @@ function submitFarm(value: number, fast: boolean) {
   const [dividend, divisor] = divParts(key);
   const feeding = sess.feeding;
   const result = answerFarm(garden, sess, key, value, fast);
+  noteAnswer(result.right);
   if (!result.right) {
     const q = quotientOf(key);
     setFb(
@@ -603,6 +620,7 @@ function submitPond() {
   }
 
   const result = tryWord(garden, sess, word, typed, today());
+  noteAnswer(result.right);
   if (!result.right) {
     // a tip is help, not a punishment: no shake, no bad sound
     sess.phase = "again";
@@ -871,6 +889,7 @@ function render() {
   renderFarm();
   renderPond();
   renderTask();
+  renderStarCount();
   sess.grew = false;
 }
 
@@ -1139,6 +1158,10 @@ export function start() {
       if (e.key === "Escape") closeProfiles();
       return;
     }
+    if (starsOpen()) {
+      if (e.key === "Escape") closeStars();
+      return;
+    }
     if (!$("summary").hidden) {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -1202,6 +1225,7 @@ export function start() {
   initProfiles(activate);
   initMusic();
   initFullscreen();
+  initStars();
 
   buildGarden();
   buildFarm(pickFlower);

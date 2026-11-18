@@ -6,6 +6,8 @@ The farm practices the division. Each task is a patch of meadow: right answers l
 
 The pond practices the spelling. Each word is a water lily. The child sees a picture and a sentence with a gap, hears the word, and types it on a keyboard in the game. The voice of the browser reads the words, so the sound must be on, and some browsers have no German voice. A wrong word is no punishment. The child gets a tip with one of the four strategies of FRESCH: to swing the syllables, to lengthen the word, to derive it from a related word, and to remember it. Then the child tries a second time. A word that is right at the second try brings fewer points and comes back soon. A word that is wrong again shows the solution, and the child copies it. A word that is right at the first try lets its lily grow. The bud and the bloom each come only on a later day, as in the garden. The child can add the own words from school, and the pond can ask only these words. A hyphen shows the syllables, as in Fahr-rad. Open lilies bring animals to the pond.
 
+The star in the header opens the stars of the child. Each day with 10, 30 and 50 tasks brings a star, in all three games together, and the sheet shows the stars of the last two weeks, the days in a row and what blooms. Under "Für Eltern" the parents see the last seven days, the tasks of each day, what blooms over time, the rows of the multiplication and the division, and the tasks that go wrong most often. The game keeps each day in a diary from the first answer after this change, for about a year.
+
 Play it at https://1xflower.woitaschek.de/.
 
 ## Development

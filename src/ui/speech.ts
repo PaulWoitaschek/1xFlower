@@ -35,10 +35,7 @@ export function initSpeech() {
 }
 
 // Reads the texts one after the other, slowly. It stops what the voice reads now.
-export function say(
-  texts: string[],
-  rate = 0.8,
-) {
+export function say(texts: string[], rate = 0.8) {
   const s = synth();
   if (!s) return;
   try {

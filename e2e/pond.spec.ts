@@ -174,7 +174,7 @@ test("a word with a missing letter gets the swinging with a bow for each syllabl
   await expect(page.locator("#fb")).toContainText("Schwingen");
   await expect(page.locator("#swing .bow")).toHaveCount(3);
   await expect(page.locator("#swing .bow").nth(1)).toHaveClass(/\bhere\b/);
-  // the frog hops without a voice, too
+  // the frog hops over the bows
   await expect(page.locator("#swing .frog")).toHaveClass(/\bon\b/);
 });
 

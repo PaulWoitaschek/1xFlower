@@ -320,8 +320,8 @@ export function tipHtml(word: Word, verdict: Verdict): string {
   );
 }
 
-// The frog hops from syllable to syllable, and the voice says each one.
-function swing(word: Word, speak: boolean) {
+// The frog hops from syllable to syllable. The child speaks the syllables.
+function swing(word: Word) {
   const box = document.getElementById("swing");
   if (!box) return;
   const bows = box.querySelectorAll<HTMLElement>(".bow");
@@ -339,25 +339,14 @@ function swing(word: Word, speak: boolean) {
     bow.classList.add("sung");
     sfx("hop");
   };
-  const onTime = () =>
-    word.syllables.forEach((_, i) => later(() => hop(i), i * 750));
-  if (!speak) return onTime();
-  let spoken = false;
-  say(word.syllables, 0.7, (i) => {
-    spoken = true;
-    hop(i);
-  });
-  // without a voice the frog hops alone
-  later(() => {
-    if (!spoken) onTime();
-  }, 700);
+  word.syllables.forEach((_, i) => later(() => hop(i), i * 750));
 }
 
 // Shows and reads the tip. A word to remember shows for a moment.
 export function runTip(word: Word, verdict: Verdict) {
   const speak = store.sound;
   const tip = verdict.tip;
-  if (tip === "schwingen") return swing(word, speak);
+  if (tip === "schwingen") return swing(word);
   if (tip === "merken") {
     sess.flash = true;
     later(() => {

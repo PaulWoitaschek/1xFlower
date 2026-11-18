@@ -38,19 +38,17 @@ export function initSpeech() {
 export function say(
   texts: string[],
   rate = 0.8,
-  onStart?: (index: number) => void,
 ) {
   const s = synth();
   if (!s) return;
   try {
     s.cancel();
     let seconds = 0.4;
-    for (const [i, text] of texts.entries()) {
+    for (const text of texts) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "de-DE";
       if (voice) utterance.voice = voice;
       utterance.rate = rate;
-      utterance.onstart = () => onStart?.(i);
       s.speak(utterance);
       seconds += 0.5 + text.length * 0.09;
     }

@@ -27,6 +27,9 @@
           </button>
         </div>
         <div class="stats">
+          <button class="stat starbtn" id="starBtn" aria-label="Meine Sterne">
+            <span class="star" aria-hidden="true">★</span><b id="sStars">0</b>
+          </button>
           <div class="stat"><small>Punkte</small><b id="sPoints">0</b></div>
           <div class="stat">
             <small>Serie</small><b id="sStreak">0</b>
@@ -245,6 +248,19 @@
           <div class="pick" id="feedFlowers"></div>
         </div>
         <button class="btn" id="feedClose">Zurück</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="stars" hidden>
+      <div
+        class="sheet ssheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="starTitle"
+      >
+        <h2 id="starTitle">Meine Sterne</h2>
+        <div class="sbody" id="starBody"></div>
+        <button class="big-go" id="starClose">Weiter üben</button>
       </div>
     </div>
 

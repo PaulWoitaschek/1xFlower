@@ -1,3 +1,4 @@
+import type { Day } from "./diary";
 import type { Farm } from "./farm";
 import type { Pond } from "./pond";
 
@@ -35,6 +36,8 @@ export interface Garden {
   farm?: Farm;
   /** the pond with the spelling, see pondOf */
   pond?: Pond;
+  /** the days of practice, by the day number of dayOf, see diaryOf */
+  days?: Record<number, Day>;
 }
 
 export type Stage = "u" | "l0" | "l1" | "l2" | "l3" | "l4" | "wilt";

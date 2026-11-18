@@ -34,6 +34,11 @@ export function musicOut(): GainNode | null {
   return context() && music;
 }
 
+/** where the voice plays, as loud as the sounds of the game */
+export function voiceOut(): GainNode | null {
+  return context() && master;
+}
+
 function audio(): AudioContext | null {
   return store.sound ? context() : null;
 }

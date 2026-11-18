@@ -49,7 +49,7 @@ import { $, mk } from "./dom";
 import { flyDot } from "./garden";
 import { haptic } from "./haptics";
 import { sfx } from "./sound";
-import { hasEnglishVoice, say } from "./speech";
+import { canSay, say } from "./speech";
 import { garden, save, sess, store } from "./state";
 import { solutionLine, tipName } from "./pond";
 
@@ -165,7 +165,7 @@ export const orchardWrites = () => task === "write";
 
 // The voice reads the English text. Nothing is read without an English voice.
 export function speakWord() {
-  if (!word || !hasEnglishVoice()) return;
+  if (!word || !canSay(word.en, "en")) return;
   say([word.en], 0.8, "en");
   if (task !== "meaning") return;
   const cue = $("cue");
@@ -292,7 +292,7 @@ export function orchardHint(): string {
   if (!Object.values(orchard.facts).some((f) => f.seen))
     return sub(
       task === "meaning"
-        ? hasEnglishVoice()
+        ? word && canSay(word.en, "en")
           ? "Tippe auf 🔊 und hör dir das Wort an. Dann such das deutsche Wort."
           : "Lies das englische Wort. Dann such das deutsche Wort."
         : task === "choose"
@@ -327,7 +327,7 @@ function renderCue(w: VocabWord) {
   const meaning = task === "meaning";
   cue.classList.toggle("en", meaning);
   cue.classList.toggle("still", !meaning);
-  cue.classList.toggle("mute", !hasEnglishVoice());
+  cue.classList.toggle("mute", !canSay(w.en, "en"));
   if (meaning) cue.setAttribute("aria-label", "Wort anhören");
   else cue.removeAttribute("aria-label");
   const text = $("cueText");

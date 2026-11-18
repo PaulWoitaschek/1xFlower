@@ -35,22 +35,17 @@ export function initSpeech() {
 }
 
 // Reads the texts one after the other, slowly. It stops what the voice reads now.
-export function say(
-  texts: string[],
-  rate = 0.8,
-  onStart?: (index: number) => void,
-) {
+export function say(texts: string[], rate = 0.8) {
   const s = synth();
   if (!s) return;
   try {
     s.cancel();
     let seconds = 0.4;
-    for (const [i, text] of texts.entries()) {
+    for (const text of texts) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "de-DE";
       if (voice) utterance.voice = voice;
       utterance.rate = rate;
-      utterance.onstart = () => onStart?.(i);
       s.speak(utterance);
       seconds += 0.5 + text.length * 0.09;
     }

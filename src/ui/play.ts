@@ -61,6 +61,7 @@ import {
   openProfiles,
   updateWho,
 } from "./profiles";
+import { initFullscreen } from "./fullscreen";
 import { initMusic, syncMusic } from "./music";
 import { sfx } from "./sound";
 import { activeProfile, garden, save, sess, setGarden, store } from "./state";
@@ -868,6 +869,7 @@ export function start() {
   $("modeFarm").onclick = () => setMode("farm");
   initProfiles(activate);
   initMusic();
+  initFullscreen();
 
   buildGarden();
   buildFarm(pickFlower);

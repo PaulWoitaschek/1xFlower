@@ -339,3 +339,21 @@ test("thirsty blooms get a short watering round", async ({ page }) => {
   await page.locator("#again").click();
   await expect(page.locator("#roundText")).toHaveText("Aufgabe 1 von 20");
 });
+
+test("the fullscreen button opens and leaves the fullscreen", async ({
+  page,
+}) => {
+  await newProfile(page);
+  const btn = page.getByRole("button", { name: "Vollbild" });
+  await btn.click();
+  await expect
+    .poll(() => page.evaluate(() => !!document.fullscreenElement))
+    .toBe(true);
+  await expect(btn).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "Vollbild beenden" }).click();
+  await expect
+    .poll(() => page.evaluate(() => !!document.fullscreenElement))
+    .toBe(false);
+  await expect(btn).toHaveAttribute("aria-pressed", "false");
+});

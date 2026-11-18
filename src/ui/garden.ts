@@ -267,11 +267,9 @@ export function flyDot(dot: HTMLElement, color: string) {
   ).onfinish = () => el.remove();
 }
 
-// Shows the garden or the farm, whichever is played.
+// Shows the card of the mode that is played. The ids are the modes.
 export function showGarden() {
-  $(
-    store.mode === "pond" ? "pond" : store.mode === "farm" ? "farm" : "garden",
-  ).scrollIntoView({
+  $(store.mode || "garden").scrollIntoView({
     behavior: reduce ? "auto" : "smooth",
   });
 }

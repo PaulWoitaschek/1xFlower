@@ -132,7 +132,12 @@ export const TRAVELLING: RawList = {
         ["walk past", "vorbeigehen an"],
         ["cross the street", "die Straße überqueren", "🚸"],
         ["on the left", "auf der linken Seite, links", "", ["on your left"]],
-        ["on the right", "auf der rechten Seite, rechts", "", ["on your right"]],
+        [
+          "on the right",
+          "auf der rechten Seite, rechts",
+          "",
+          ["on your right"],
+        ],
         ["walk straight on", "geradeaus gehen", "⬆️"],
         ["turn left", "nach links abbiegen", "⬅️"],
         ["turn right", "nach rechts abbiegen", "➡️"],

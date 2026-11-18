@@ -18,6 +18,7 @@ import {
 } from "../rules/diary";
 import { divKey } from "../rules/farm";
 import { orchardOf, orchardWords } from "../rules/orchard";
+import { pairText } from "./orchard";
 import { pondOf, pondWords } from "../rules/pond";
 import type { Mode } from "../rules/storage";
 import { dayOf, factors, keyOf } from "../rules/garden";
@@ -32,13 +33,13 @@ const NAMES: Record<Mode, string> = {
   garden: "Garten",
   farm: "Bauernhof",
   pond: "Teich",
-  orchard: "Obstwiese", // placeholder name
+  orchard: "Obstwiese",
 };
 const WHAT: Record<Mode, string> = {
   garden: "Blüten",
   farm: "Heu",
   pond: "Seerosen",
-  orchard: "Bäume", // placeholder: the ripe trees
+  orchard: "Bäume",
 };
 const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const RANGES = [
@@ -165,7 +166,7 @@ function weekPart() {
   return part;
 }
 
-// What blooms in the garden, on the farm and in the pond.
+// What blooms in the garden, on the farm, in the pond and in the orchard.
 function canPart() {
   const part = mk("section", "spart");
   part.append(mk("h3", null, "Das kannst du schon"));
@@ -557,11 +558,13 @@ function trickyPart() {
   const chips = mk("div", "stricky");
   for (const item of list) {
     const text =
-      item.mode === "pond"
-        ? item.key
-        : item.mode === "farm"
-          ? item.key.replace(":", " : ")
-          : factors(item.key).join(" × ");
+      item.mode === "orchard"
+        ? pairText(item.key)
+        : item.mode === "pond"
+          ? item.key
+          : item.mode === "farm"
+            ? item.key.replace(":", " : ")
+            : factors(item.key).join(" × ");
     const chip = mk("span", "c-" + item.mode + (item.wilt ? " wilt" : ""));
     chip.append(
       mk("b", null, text),

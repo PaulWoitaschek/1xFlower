@@ -74,6 +74,14 @@ export function setList(orchard: Orchard, id: string, on: boolean) {
   orchard.groups = [...new Set([...orchard.groups, ...ids])];
 }
 
+// A saved orchard lacks the lists that came later. Each new list is chosen, with
+// all its groups. It tells if something was added.
+export function addNewLists(orchard: Orchard): boolean {
+  const added = LIST_IDS.filter((id) => !orchard.lists.includes(id));
+  for (const id of added) setList(orchard, id, true);
+  return added.length > 0;
+}
+
 // The words from school, without the bad entries.
 const ownWords = (orchard: Orchard): VocabWord[] =>
   orchard.own.flatMap((entry) => ownWord(entry) || []);
@@ -252,6 +260,17 @@ export function check(word: VocabWord, typed: string): Verdict {
       best = { right: false, tip: null, target, wrong };
   }
   return best!;
+}
+
+// How many letters at the start of the typed text are right. The page shows
+// them, so that the child sees how far it is right without the solution. The
+// capital letters do not count here, the tip tells about them.
+export function rightStart(typed: string, target: string): number {
+  const low = tidy(typed).toLowerCase();
+  const goal = target.toLowerCase();
+  let n = 0;
+  while (n < low.length && n < goal.length && low[n] === goal[n]) n++;
+  return n;
 }
 
 export interface TreeWrong {

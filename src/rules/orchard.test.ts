@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { newRound, type Play } from "./answer";
 import { freshGarden, type Fact } from "./garden";
 import {
+  addNewLists,
   check,
   chooseWord,
   freshOrchard,
@@ -13,6 +14,7 @@ import {
   ORCHARD_RESIDENTS,
   pickOrchard,
   retryWrite,
+  rightStart,
   ripeTrees,
   setList,
   taskOf,
@@ -20,7 +22,7 @@ import {
   wordOf,
 } from "./orchard";
 import { TIP_POINTS } from "./pond";
-import { builtIn, WORDS } from "./vocab";
+import { builtIn, GROUP_IDS, LIST_IDS, WORDS } from "./vocab";
 
 const play = (): Play => ({
   streak: 0,
@@ -423,5 +425,46 @@ describe("the animals", () => {
       need: 3,
     });
     expect(nextOrchardResident(999)).toEqual({ resident: null, need: 0 });
+  });
+});
+
+describe("addNewLists", () => {
+  it("does nothing when all lists are chosen", () => {
+    const orchard = freshOrchard();
+    expect(addNewLists(orchard)).toBe(false);
+    expect(orchard.groups).toEqual(GROUP_IDS);
+  });
+
+  it("adds a list that a saved orchard lacks, with its groups", () => {
+    const orchard = freshOrchard();
+    orchard.lists = [];
+    orchard.groups = [];
+    expect(addNewLists(orchard)).toBe(true);
+    expect(orchard.lists).toEqual(LIST_IDS);
+    expect(orchard.groups).toEqual(GROUP_IDS);
+  });
+
+  it("keeps the groups that the child dropped from the other lists", () => {
+    const orchard = freshOrchard();
+    orchard.groups = orchard.groups.filter((id) => id !== GROUP_IDS[0]);
+    addNewLists(orchard);
+    expect(orchard.groups).not.toContain(GROUP_IDS[0]);
+  });
+});
+
+describe("rightStart", () => {
+  it("counts the letters that are right at the start", () => {
+    expect(rightStart("appel", "apple")).toBe(3);
+    expect(rightStart("apple", "apple")).toBe(5);
+    expect(rightStart("xpple", "apple")).toBe(0);
+  });
+
+  it("stops at the end of the typed text or of the target", () => {
+    expect(rightStart("app", "apple")).toBe(3);
+    expect(rightStart("apples", "apple")).toBe(5);
+  });
+
+  it("ignores capital letters and extra spaces", () => {
+    expect(rightStart("The  usa", "the USA")).toBe(7);
   });
 });

@@ -253,13 +253,31 @@ describe("feeding with hay", () => {
     expect(hen.meals).toBe(0);
   });
 
-  it("lays no egg when the flock is full", () => {
+  it("lays into the basket when the flock is full", () => {
     const chickens = Array.from({ length: FLOCK_MAX }, (_, i) =>
       chicken({ id: "c" + i, grown: true }),
     );
-    const farm = { ...freshFarm(), eggs: [], hay: 9, chickens };
-    for (let i = 0; i < LAY_MEALS; i++) feedHay(farm, "c0");
+    const farm: Farm = { ...freshFarm(), eggs: [], hay: 9, chickens };
+    for (let i = 1; i < LAY_MEALS; i++) feedHay(farm, "c0");
+    expect(feedHay(farm, "c0")).toEqual({
+      grown: false,
+      egg: true,
+      basket: true,
+    });
     expect(farm.eggs).toEqual([]);
+    expect(farm.basket).toBe(1);
+    expect(full(farm, chickens[0])).toBe(false);
+    for (let i = 0; i < LAY_MEALS; i++) feedHay(farm, "c0");
+    expect(farm.basket).toBe(2);
+  });
+
+  it("fills the basket when the eggs fill the flock", () => {
+    const chickens = Array.from({ length: FLOCK_MAX - 1 }, (_, i) =>
+      chicken({ id: "c" + i, grown: true, meals: LAY_MEALS - 1 }),
+    );
+    const farm: Farm = { ...freshFarm(), hay: 9, chickens };
+    expect(feedHay(farm, "c0")?.basket).toBe(true);
+    expect(farm.eggs).toHaveLength(1);
   });
 });
 

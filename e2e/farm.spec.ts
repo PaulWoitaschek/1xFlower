@@ -20,7 +20,11 @@ const chick = { id: "c", color: 1, grown: false, meals: 0 };
 // A profile on the farm with a chick, the given eggs and hay, and the given blooms in the garden.
 async function farmWith(
   page: Page,
-  farm: { hay: number; eggs: { id: string; warmth: number }[] },
+  farm: {
+    hay: number;
+    eggs: { id: string; warmth: number }[];
+    chickens?: (typeof chick)[];
+  },
   blooms: string[] = [],
 ) {
   const bloom = { lvl: 4, seen: 4, right: 4, wrong: 0, wilt: false, grown: 0 };
@@ -105,6 +109,24 @@ test("a warm egg hatches a chick", async ({ page }) => {
   await expect(page.locator("#fb")).toContainText("Ein Küken ist geschlüpft!");
   await expect(page.locator(".bird")).toHaveCount(2);
   await expect(page.locator(".nest")).toContainText("Das Nest ist leer");
+});
+
+test("a hen of a full flock lays into the egg basket", async ({ page }) => {
+  const chickens = Array.from({ length: 12 }, (_, i) => ({
+    ...chick,
+    id: "c" + i,
+    grown: true,
+    meals: 2,
+  }));
+  await farmWith(page, { hay: 2, eggs: [], chickens: chickens });
+  await expect(page.locator(".bird.full")).toHaveCount(0);
+
+  await page.locator(".bird").first().click();
+  await page.locator("#feedHay").click();
+
+  await expect(page.locator("#fNote")).toContainText("Eierkorb");
+  await expect(page.locator(".basket")).toContainText("1 Ei");
+  await page.screenshot({ path: "test-results/basket.png" });
 });
 
 test("a chick eats hay from the barn", async ({ page }) => {

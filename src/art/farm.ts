@@ -256,3 +256,17 @@ export function chickenSVG(c: Chicken): string {
     "</g></svg>"
   );
 }
+
+/* the basket with the eggs the hens laid while the flock was full */
+export function basketSVG(): string {
+  return (
+    '<svg class="basketsvg" viewBox="0 0 40 30" aria-hidden="true">' +
+    '<path d="M8 14Q20 -4 32 14" fill="none" stroke="#A0703C" stroke-width="2.4" stroke-linecap="round"/>' +
+    '<ellipse cx="14" cy="13" rx="4.5" ry="6" fill="#FFF4DF" stroke="rgba(0,0,0,.28)" stroke-width=".6"/>' +
+    '<ellipse cx="26" cy="13" rx="4.5" ry="6" fill="#F3DCC0" stroke="rgba(0,0,0,.28)" stroke-width=".6"/>' +
+    '<ellipse cx="20" cy="11" rx="4.5" ry="6" fill="#FFF4DF" stroke="rgba(0,0,0,.28)" stroke-width=".6"/>' +
+    '<path d="M4 15H36L32 28H8Z" fill="#C08A4A"/>' +
+    '<path d="M6 19H34M7 23.5H33M14 15V28M20 15V28M26 15V28" stroke="#8A5E30" stroke-width=".9"/>' +
+    "</svg>"
+  );
+}

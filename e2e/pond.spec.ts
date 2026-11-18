@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { clipPath } from "../src/rules/clips";
 import { dayOf } from "../src/rules/garden";
 
 interface Preload {
@@ -333,4 +334,46 @@ test("a round of ten words ends in the summary", async ({ page }) => {
   await expect(page.locator("#sumGarden")).toContainText(
     "1 von 1 Seerosen blühen.",
   );
+});
+
+// Counts what the voice of the browser reads.
+async function listen(page: Page) {
+  await page.addInitScript(() => {
+    const spoken: string[] = [];
+    (window as unknown as { spoken: string[] }).spoken = spoken;
+    window.speechSynthesis.speak = (u: SpeechSynthesisUtterance) => {
+      spoken.push(u.text);
+    };
+  });
+}
+
+const spoken = (page: Page) =>
+  page.evaluate(() => (window as unknown as { spoken: string[] }).spoken);
+
+test("the pond plays the recordings of a word and its sentence", async ({
+  page,
+}) => {
+  await listen(page);
+  const heard: string[] = [];
+  page.on("requestfinished", (request) => heard.push(request.url()));
+  await pondWith(page);
+
+  await page.locator("#cue").click();
+
+  for (const text of ["Hund", "Der Hund bellt laut."])
+    await expect
+      .poll(() => heard.some((url) => url.endsWith(clipPath("de", text))))
+      .toBe(true);
+  expect(await spoken(page)).toEqual([]);
+});
+
+test("the voice of the browser reads an own word without a recording", async ({
+  page,
+}) => {
+  await listen(page);
+  await pondWith(page, { own: ["Spiel-platz"] });
+
+  await page.locator("#cue").click();
+
+  await expect.poll(() => spoken(page)).toEqual(["Spielplatz", "Spielplatz"]);
 });

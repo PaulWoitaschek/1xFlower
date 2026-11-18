@@ -7,8 +7,8 @@ export interface Profile {
   flower: number;
 }
 
-/** the garden practices the multiplication, the farm the division */
-export type Mode = "garden" | "farm";
+/** the garden practices the multiplication, the farm the division, the pond the spelling */
+export type Mode = "garden" | "farm" | "pond";
 
 export interface Store {
   v: 2;

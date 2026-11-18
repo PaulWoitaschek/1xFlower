@@ -32,6 +32,7 @@ export function updateWho() {
   $("whoAva").innerHTML = flowerSVG(avatarVariety(p ? p.flower : 1));
   $("gTitle").textContent = p ? "Garten von " + p.name : "Mein Garten";
   $("fTitle").textContent = p ? "Bauernhof von " + p.name : "Mein Bauernhof";
+  $("pondTitle").textContent = p ? "Teich von " + p.name : "Mein Teich";
 }
 
 export function openProfiles() {

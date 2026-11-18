@@ -23,7 +23,8 @@ export interface Round {
   right: number;
   points: number;
   blooms: number;
-  marks: ("ok" | "bad")[];
+  /** "tip": right at the second try, with a tip of the pond */
+  marks: ("ok" | "bad" | "tip")[];
   missed: string[];
 }
 

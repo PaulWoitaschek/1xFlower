@@ -48,6 +48,20 @@ function duck(t: number) {
   g.linearRampToValueAtTime(MUSIC_LEVEL, t + 1.4);
 }
 
+// The music is quiet while the voice reads a word, so that the child hears each sound.
+export function hushMusic(seconds: number) {
+  if (!ac || !music) return;
+  try {
+    const t = ac.currentTime;
+    const g = music.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(MUSIC_LEVEL * 0.2, t + 0.15);
+    g.linearRampToValueAtTime(MUSIC_LEVEL * 0.2, t + seconds);
+    g.linearRampToValueAtTime(MUSIC_LEVEL, t + seconds + 1);
+  } catch {}
+}
+
 interface ToneOptions {
   type?: OscillatorType;
   vol?: number;
@@ -134,6 +148,10 @@ const SFX = {
     [0, 0.16, 0.3].forEach((d, i) =>
       tone(2300 + i * 150, t + d, 0.09, { vol: 0.06, to: 3300 + i * 200 }),
     );
+  },
+  // a frog hops on a syllable
+  hop(t: number) {
+    tone(300, t, 0.12, { vol: 0.07, to: 620 });
   },
   done(t: number) {
     [523, 659, 784].forEach((f, i) => bell(f, t + i * 0.12, 0.7, 0.09));

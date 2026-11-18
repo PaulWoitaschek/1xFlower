@@ -36,7 +36,8 @@ export interface Moment {
 interface Session extends Play {
   cur: string;
   input: string;
-  phase: "ask" | "fix" | "ok";
+  /** "again": the second try of a word in the pond, after the tip */
+  phase: "ask" | "again" | "fix" | "ok";
   t0: number;
   bloom: string | null;
   /** the blooms next to the new bloom, they greet it */
@@ -59,6 +60,12 @@ interface Session extends Play {
   /** hay bales and chicks of this round on the farm */
   bales: number;
   chicks: number;
+  /** the next letter in the pond is a capital letter */
+  shift: boolean;
+  /** the pond shows a word to remember for a moment, the keys wait */
+  flash: boolean;
+  /** the animal that came to the pond with the last word */
+  newResident: string | null;
 }
 
 export interface Feeding {
@@ -91,4 +98,7 @@ export const sess: Session = {
   feeding: null,
   bales: 0,
   chicks: 0,
+  shift: false,
+  flash: false,
+  newResident: null,
 };

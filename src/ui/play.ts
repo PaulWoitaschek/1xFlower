@@ -148,6 +148,14 @@ function tomorrowText() {
   );
 }
 
+// The children practice all rows of the garden, the choice of the rows confused
+// them. The address with "?reihen" shows the choice again, as for the tests.
+const ROW_CHOICE = new URLSearchParams(location.search).has("reihen");
+
+function allRows() {
+  if (!ROW_CHOICE) garden.rows = freshGarden().rows;
+}
+
 const MORE_ROWS = "Nimm im Garten eine Reihe dazu!";
 
 const farmMode = () => store.mode === "farm";
@@ -215,7 +223,7 @@ function hint() {
   }
   if (nothingGrows(garden, today())) {
     const next = tomorrowText();
-    if (garden.rows.length < 10)
+    if (ROW_CHOICE && garden.rows.length < 10)
       return (
         '<span class="sub">In deinen Reihen wächst heute nichts mehr. ' +
         MORE_ROWS +
@@ -1070,7 +1078,7 @@ function gardenSummary() {
     " von 100 blühen.";
   const next =
     tomorrowText() +
-    (nothingGrows(garden, today()) && garden.rows.length < 10
+    (ROW_CHOICE && nothingGrows(garden, today()) && garden.rows.length < 10
       ? " " + MORE_ROWS
       : "");
   $("sumNext").textContent = next.trim();
@@ -1079,6 +1087,7 @@ function gardenSummary() {
 
 // The row chips of the garden and of the farm.
 function buildRows() {
+  $("rowPick").hidden = !ROW_CHOICE;
   rowChips(
     "rows",
     "row",
@@ -1157,6 +1166,7 @@ function resetIdle() {
 function activate(id: string) {
   store.active = id;
   setGarden(upgrade((store.data[id] ||= freshGarden())));
+  allRows();
   claimGifts(garden);
   save();
   sess.streak = 0;
@@ -1335,6 +1345,7 @@ export function start() {
     next: (ms) => setTimeout(newTask, ms),
   });
   showMode();
+  allRows();
   buildRows();
   resetIdle();
   updateWho();

@@ -1,10 +1,17 @@
-import { clipPath, clipTexts, type Lang } from "../rules/clips";
+import {
+  clipPath,
+  clipTexts,
+  swingPath,
+  swingText,
+  swingTexts,
+  type Lang,
+} from "../rules/clips";
 import { context, hushMusic, voiceOut } from "./sound";
 
-// The voice reads the words. The fixed texts have a recording of a voice of a
-// Mac, so each device hears the same voice. The voice of the browser reads
-// the own words. It differs from device to device, and some browsers have no
-// German voice at all.
+// The voice reads the words. The fixed texts have a recording of a voice of
+// ElevenLabs, so each device hears the same voice. The voice of the browser
+// reads the own words. It differs from device to device, and some browsers
+// have no German voice at all.
 
 export type { Lang };
 
@@ -18,6 +25,8 @@ const TAG: Record<Lang, string> = { de: "de-DE", en: "en-GB" };
 
 /** the pause between two recordings, in seconds */
 const GAP = 0.5;
+/** the time from the call to the first sound, in seconds */
+const LEAD = 0.05;
 
 const voices: Record<Lang, SpeechSynthesisVoice | null> = {
   de: null,
@@ -103,17 +112,21 @@ async function play(texts: string[], rate: number, lang: Lang) {
   if (mine !== turn) return;
   if (loaded.some((buffer) => !buffer)) return speak(texts, rate, lang);
   try {
-    let at = ac.currentTime + 0.05;
-    for (const buffer of loaded as AudioBuffer[]) {
-      const source = ac.createBufferSource();
-      source.buffer = buffer;
-      source.connect(out);
-      source.start(at);
-      playing.push(source);
-      at += buffer.duration + GAP;
-    }
-    hushMusic(at - ac.currentTime);
+    start(ac, out, loaded as AudioBuffer[]);
   } catch {}
+}
+
+function start(ac: AudioContext, out: GainNode, sounds: AudioBuffer[]) {
+  let at = ac.currentTime + LEAD;
+  for (const buffer of sounds) {
+    const source = ac.createBufferSource();
+    source.buffer = buffer;
+    source.connect(out);
+    source.start(at);
+    playing.push(source);
+    at += buffer.duration + GAP;
+  }
+  hushMusic(at - ac.currentTime);
 }
 
 // The voice of the browser reads the texts, slowly.
@@ -139,6 +152,36 @@ export function say(texts: string[], rate = 0.8, lang: Lang = "de") {
   hush();
   if (texts.every((text) => hasClip(text, lang))) void play(texts, rate, lang);
   else speak(texts, rate, lang);
+}
+
+let swings: Set<string> | null = null;
+
+// Says a word of the pond syllable by syllable. It gives the time from now
+// to the start of each syllable, in seconds. It gives null when the word has
+// no such recording, or when the voice reads something else by now.
+export async function saySwing(syllables: string[]): Promise<number[] | null> {
+  hush();
+  swings ??= new Set(swingTexts());
+  const text = swingText(syllables);
+  const ac = context();
+  const out = voiceOut();
+  if (!swings.has(text) || !ac || !out) return null;
+  const mine = turn;
+  const path = swingPath(text);
+  const [sound, starts] = await Promise.all([
+    load(ac, path + ".mp3"),
+    fetch(path + ".json")
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null) as Promise<number[] | null>,
+  ]);
+  if (mine !== turn || !sound || starts?.length !== syllables.length)
+    return null;
+  try {
+    start(ac, out, [sound]);
+  } catch {
+    return null;
+  }
+  return starts.map((second) => second + LEAD);
 }
 
 export function hush() {

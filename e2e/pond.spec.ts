@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { clipPath } from "../src/rules/clips";
+import { clipPath, swingPath } from "../src/rules/clips";
 import { dayOf } from "../src/rules/garden";
 
 interface Preload {
@@ -7,6 +7,7 @@ interface Preload {
   own?: string[];
   onlyOwn?: boolean;
   strategies?: string[];
+  sound?: boolean;
 }
 
 // A profile in the pond that asks only the given own words (default: Hund).
@@ -14,7 +15,7 @@ async function pondWith(page: Page, preload: Preload = {}) {
   const store = {
     v: 2,
     mode: "pond",
-    sound: false,
+    sound: preload.sound ?? false,
     music: false,
     haptic: false,
     active: "a",
@@ -364,6 +365,27 @@ test("the pond plays the recordings of a word and its sentence", async ({
     await expect
       .poll(() => heard.some((url) => url.endsWith(clipPath("de", text))))
       .toBe(true);
+  expect(await spoken(page)).toEqual([]);
+});
+
+test("the pond plays the recording of a word in syllables, and the frog hops along", async ({
+  page,
+}) => {
+  await listen(page);
+  const heard: string[] = [];
+  page.on("requestfinished", (request) => heard.push(request.url()));
+  await pondWith(page, { own: ["To-ma-te"], sound: true });
+
+  await type(page, "Tomte");
+
+  for (const ending of [".mp3", ".json"])
+    await expect
+      .poll(() =>
+        heard.some((url) => url.endsWith(swingPath("To-ma-te") + ending)),
+      )
+      .toBe(true);
+  // the frog reaches the last syllable
+  await expect(page.locator("#swing .bow").nth(2)).toHaveClass(/\bsung\b/);
   expect(await spoken(page)).toEqual([]);
 });
 

@@ -1,6 +1,13 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { clipName, clipPath, clipTexts, pondTexts } from "./clips";
+import {
+  clipName,
+  clipPath,
+  clipTexts,
+  pondTexts,
+  swingPath,
+  swingTexts,
+} from "./clips";
 import { WORDS } from "./words";
 
 const dir = new URL("../../public/", import.meta.url);
@@ -21,6 +28,33 @@ describe("the recordings", () => {
       expect(files.sort()).toEqual(
         texts.map((text) => clipName(text) + ".mp3").sort(),
       );
+    }
+  });
+
+  it("say each word of the pond in syllables, but not a word of one syllable", () => {
+    expect(swingTexts()).toContain("Scho-ko-la-de");
+    expect(swingTexts()).not.toContain("Hund");
+  });
+
+  it("exist for each word in syllables, with no file left over", () => {
+    const files = readdirSync(new URL("voice/swing/", dir));
+    expect(files.sort()).toEqual(
+      swingTexts()
+        .flatMap((text) => [clipName(text) + ".json", clipName(text) + ".mp3"])
+        .sort(),
+    );
+  });
+
+  it("know the start of each syllable", () => {
+    for (const text of swingTexts()) {
+      const starts: number[] = JSON.parse(
+        readFileSync(new URL(swingPath(text) + ".json", dir), "utf8"),
+      );
+      expect(starts, text).toHaveLength(text.split("-").length);
+      expect(
+        [...starts].sort((a, b) => a - b),
+        text,
+      ).toEqual(starts);
     }
   });
 

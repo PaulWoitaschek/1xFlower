@@ -107,7 +107,7 @@ test("the third bloom brings a gift", async ({ page }) => {
   await page.addInitScript((saved) => {
     localStorage.setItem("einmaleins-garten-v2", saved);
   }, JSON.stringify(store));
-  await page.goto("/");
+  await page.goto("/?reihen");
   await expect(page.locator("#fb")).toContainText(
     "Noch 1 Blüte bis zum Geschenk",
   );
@@ -157,7 +157,7 @@ test("the blooms next to a new bloom greet it and a new bee comes", async ({
   await page.addInitScript((saved) => {
     localStorage.setItem("einmaleins-garten-v2", saved);
   }, JSON.stringify(store));
-  await page.goto("/");
+  await page.goto("/?reihen");
   await expect(page.locator("#life .guest.bee")).toHaveCount(4);
 
   const { a, b } = await answer(page);
@@ -196,11 +196,11 @@ test("a bud that grew today blooms only on a later day", async ({ page }) => {
   await page.addInitScript((saved) => {
     localStorage.setItem("einmaleins-garten-v2", saved);
   }, JSON.stringify(store));
-  await page.goto("/");
+  await page.goto("/?reihen");
   await expect(page.locator("#fb")).toContainText(
     "In deinen Reihen wächst heute nichts mehr. Nimm im Garten eine Reihe dazu!",
   );
-  await expect(gardenPlant(page, 3, 1)).toHaveClass(/\brest\b/);
+  await expect(gardenPlant(page, 3, 1)).not.toHaveClass(/\brest\b/);
 
   const first = await answer(page);
 
@@ -217,6 +217,30 @@ test("a bud that grew today blooms only on a later day", async ({ page }) => {
   await expect(gardenPlant(page, second.a, second.b)).toHaveClass(/\bl4\b/);
   await expect(page.locator("#mapCap")).toHaveText("1 von 100 blühen");
   await expect(gardenPlant(page, 3, 1)).not.toHaveClass(/\brest\b/);
+});
+
+test("the garden practices all rows and hides the choice of the rows", async ({
+  page,
+}) => {
+  const store = {
+    v: 2,
+    sound: false,
+    music: false,
+    haptic: false,
+    active: "a",
+    profiles: [{ id: "a", name: "Lena", flower: 3 }],
+    data: {
+      a: { facts: {}, points: 0, best: 0, rows: [3], deco: [], critters: [] },
+    },
+  };
+  await page.addInitScript((saved) => {
+    localStorage.setItem("einmaleins-garten-v2", saved);
+  }, JSON.stringify(store));
+  await page.goto("/");
+
+  await expect(page.locator("#rowPick")).toBeHidden();
+  await expect(page.locator("#grid .cell.off")).toHaveCount(0);
+  await expect(page.locator("#grid .tree.off")).toHaveCount(0);
 });
 
 test("the summary tells what can come tomorrow", async ({ page }) => {
@@ -238,7 +262,7 @@ test("the summary tells what can come tomorrow", async ({ page }) => {
   await page.addInitScript((saved) => {
     localStorage.setItem("einmaleins-garten-v2", saved);
   }, JSON.stringify(store));
-  await page.goto("/");
+  await page.goto("/?reihen");
 
   for (let task = 1; task <= 20; task++) {
     await expect(page.locator("#roundText")).toHaveText(

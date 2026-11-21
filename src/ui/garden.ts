@@ -11,7 +11,6 @@ import {
   dayOf,
   factors,
   keyOf,
-  rests,
   rowComplete,
   stage,
   type Critter,
@@ -139,7 +138,6 @@ export function renderGarden() {
       thirst +
       off +
       (cur ? " cur" : "") +
-      (rests(garden, key, today) ? " rest" : "") +
       (key === sess.bloom ? " bloomed" : "") +
       (sess.friends.includes(key) ? " hello" : "");
     if (cells[key].className !== cls) {

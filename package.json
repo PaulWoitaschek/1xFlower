@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "vite build && playwright test",
-    "voice": "tsx scripts/voice.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -17,7 +16,6 @@
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "prettier": "^3.10.1",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"

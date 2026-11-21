@@ -1,16 +1,17 @@
 import {
   clipPath,
-  hasClip,
-  swingClip,
-  type Clip,
+  clipTexts,
+  swingPath,
+  swingText,
+  swingTexts,
   type Lang,
 } from "../rules/clips";
-import { context, hushMusic } from "./sound";
+import { context, hushMusic, voiceOut } from "./sound";
 
-// The voice of the game. The words of the pond have sound files, see
-// `rules/clips.ts`. The voice of the browser reads all other texts: the own
-// words and the English words. It differs from device to device, and some
-// browsers have no German voice at all.
+// The voice reads the words. The fixed texts have a recording of a voice of
+// ElevenLabs, so each device hears the same voice. The voice of the browser
+// reads the own words. It differs from device to device, and some browsers
+// have no German voice at all.
 
 export type { Lang };
 
@@ -21,6 +22,11 @@ const GOOD: Record<Lang, RegExp> = {
 };
 /** the language tag of the utterance, and the region that ranks first */
 const TAG: Record<Lang, string> = { de: "de-DE", en: "en-GB" };
+
+/** the pause between two recordings, in seconds */
+const GAP = 0.5;
+/** the time from the call to the first sound, in seconds */
+const LEAD = 0.05;
 
 const voices: Record<Lang, SpeechSynthesisVoice | null> = {
   de: null,
@@ -58,62 +64,64 @@ export function initSpeech() {
   s.addEventListener?.("voiceschanged", pickVoices);
 }
 
-// Tells if the device has an English voice, so that the orchard can say it
-// when the child hears nothing.
-export function hasEnglishVoice(): boolean {
-  return !!voices.en;
+let recorded: Record<Lang, Set<string>> | null = null;
+
+function hasClip(text: string, lang: Lang): boolean {
+  if (!recorded) {
+    const texts = clipTexts();
+    recorded = { de: new Set(texts.de), en: new Set(texts.en) };
+  }
+  return recorded[lang].has(text);
 }
 
-/** the pause between two sound files, in seconds */
-const GAP = 0.3;
-/** the time from the call to the first sound, in seconds */
-const LEAD = 0.05;
-/** the number of sounds that stay loaded */
-const KEEP = 24;
+// Tells if the page can read the text, so that the orchard can say it when
+// the child hears nothing.
+export function canSay(text: string, lang: Lang): boolean {
+  return hasClip(text, lang) || !!voices[lang];
+}
 
-const loaded = new Map<string, Promise<AudioBuffer | null>>();
+/** the loaded recordings by path, null for a recording that fails */
+const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
-/** the sounds that play now or wait for their turn */
+function load(ac: AudioContext, path: string): Promise<AudioBuffer | null> {
+  let buffer = buffers.get(path);
+  if (!buffer) {
+    buffer = fetch(path)
+      .then((response) => (response.ok ? response.arrayBuffer() : null))
+      .then((data) => (data ? ac.decodeAudioData(data) : null))
+      .catch(() => null);
+    buffers.set(path, buffer);
+  }
+  return buffer;
+}
+
+/** counts each start and stop, so that a late recording stays quiet */
+let turn = 0;
 let playing: AudioBufferSourceNode[] = [];
 
-/** Counts the calls. A sound that loads for an older call does not play. */
-let turn = 0;
-
-async function fetchSound(path: string): Promise<AudioBuffer | null> {
-  try {
-    const ac = context();
-    const res = ac && (await fetch("audio/" + path + ".mp3"));
-    if (!ac || !res || !res.ok) return null;
-    return await ac.decodeAudioData(await res.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
-// Loads the sound file of a clip. The last sounds stay loaded, so that a word
-// that the child hears again plays at once.
-function load(clip: Clip): Promise<AudioBuffer | null> {
-  const path = clipPath(clip);
-  const sound = loaded.get(path) || fetchSound(path);
-  loaded.delete(path);
-  loaded.set(path, sound);
-  if (loaded.size > KEEP) loaded.delete(loaded.keys().next().value!);
-  // a sound that did not load gets a new try the next time
-  void sound.then((buffer) => {
-    if (!buffer && loaded.get(path) === sound) loaded.delete(path);
-  });
-  return sound;
-}
-
-// Plays the sounds one after the other.
-function play(sounds: AudioBuffer[]) {
+// Plays the recordings one after the other. The voice of the browser reads
+// the texts when a recording fails to load.
+async function play(texts: string[], rate: number, lang: Lang) {
+  const mine = turn;
   const ac = context();
-  if (!ac) return;
+  const out = voiceOut();
+  if (!ac || !out) return speak(texts, rate, lang);
+  const loaded = await Promise.all(
+    texts.map((text) => load(ac, clipPath(lang, text))),
+  );
+  if (mine !== turn) return;
+  if (loaded.some((buffer) => !buffer)) return speak(texts, rate, lang);
+  try {
+    start(ac, out, loaded as AudioBuffer[]);
+  } catch {}
+}
+
+function start(ac: AudioContext, out: GainNode, sounds: AudioBuffer[]) {
   let at = ac.currentTime + LEAD;
   for (const buffer of sounds) {
     const source = ac.createBufferSource();
     source.buffer = buffer;
-    source.connect(ac.destination);
+    source.connect(out);
     source.start(at);
     playing.push(source);
     at += buffer.duration + GAP;
@@ -121,8 +129,8 @@ function play(sounds: AudioBuffer[]) {
   hushMusic(at - ac.currentTime);
 }
 
-// The voice of the browser reads the texts one after the other, slowly.
-function read(texts: string[], rate: number, lang: Lang) {
+// The voice of the browser reads the texts, slowly.
+function speak(texts: string[], rate: number, lang: Lang) {
   const s = synth();
   if (!s) return;
   try {
@@ -139,44 +147,41 @@ function read(texts: string[], rate: number, lang: Lang) {
   } catch {}
 }
 
-// Says the texts one after the other. It stops what the voice says now. The
-// rate is the speed of the voice of the browser, a sound file has its own.
+// Reads the texts one after the other. It stops what the voice reads now.
 export function say(texts: string[], rate = 0.8, lang: Lang = "de") {
   hush();
-  const clips = texts.map((text): Clip => ({ lang, style: "plain", text }));
-  if (!clips.every(hasClip)) return read(texts, rate, lang);
-  const mine = turn;
-  void Promise.all(clips.map(load)).then((sounds) => {
-    if (mine !== turn) return;
-    const ready = sounds.filter((sound) => sound !== null);
-    // without the files the voice of the browser reads
-    if (ready.length === sounds.length) play(ready);
-    else read(texts, rate, lang);
-  });
+  if (texts.every((text) => hasClip(text, lang))) void play(texts, rate, lang);
+  else speak(texts, rate, lang);
 }
 
-async function fetchStarts(clip: Clip): Promise<number[] | null> {
+let swings: Set<string> | null = null;
+
+// Says a word of the pond syllable by syllable. It gives the time from now
+// to the start of each syllable, in seconds. It gives null when the word has
+// no such recording, or when the voice reads something else by now.
+export async function saySwing(syllables: string[]): Promise<number[] | null> {
+  hush();
+  swings ??= new Set(swingTexts());
+  const text = swingText(syllables);
+  const ac = context();
+  const out = voiceOut();
+  if (!swings.has(text) || !ac || !out) return null;
+  const mine = turn;
+  const path = swingPath(text);
+  const [sound, starts] = await Promise.all([
+    load(ac, path + ".mp3"),
+    fetch(path + ".json")
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null) as Promise<number[] | null>,
+  ]);
+  if (mine !== turn || !sound || starts?.length !== syllables.length)
+    return null;
   try {
-    const res = await fetch("audio/" + clipPath(clip) + ".json");
-    return res.ok ? ((await res.json()) as number[]) : null;
+    start(ac, out, [sound]);
   } catch {
     return null;
   }
-}
-
-// Says a word syllable by syllable. It gives the time from now to the start
-// of each syllable, in seconds. It gives null when the word has no such
-// sound, or when the voice says something else by now.
-export async function saySwing(syllables: string[]): Promise<number[] | null> {
-  hush();
-  const clip = swingClip(syllables);
-  if (!clip || !hasClip(clip)) return null;
-  const mine = turn;
-  const [sound, starts] = await Promise.all([load(clip), fetchStarts(clip)]);
-  if (mine !== turn || !sound || starts?.length !== syllables.length)
-    return null;
-  play([sound]);
-  return starts.map((start) => start + LEAD);
+  return starts.map((second) => second + LEAD);
 }
 
 export function hush() {

@@ -34,6 +34,11 @@ export function musicOut(): GainNode | null {
   return context() && music;
 }
 
+/** where the voice plays, as loud as the sounds of the game */
+export function voiceOut(): GainNode | null {
+  return context() && master;
+}
+
 function audio(): AudioContext | null {
   return store.sound ? context() : null;
 }
@@ -162,8 +167,7 @@ const SFX = {
   },
 };
 
-// All sounds and the music are synthesized. Only the voice has sound files,
-// see `speech.ts`.
+// All sounds and the music are synthesized, the game has no sound files.
 export function sfx(name: keyof typeof SFX) {
   const a = audio();
   if (!a) return;

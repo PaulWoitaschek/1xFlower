@@ -1,5 +1,4 @@
 import { frogSVG, LILY_COLORS, lilyColor, lilySVG } from "../art/pond";
-import { spoken } from "../rules/clips";
 import {
   lilyStage,
   openLilies,
@@ -247,8 +246,8 @@ export function tipHtml(word: Word, verdict: Verdict): string {
 }
 
 // The frog hops from syllable to syllable, and the voice says each one. An
-// own word has no such sound: the frog hops in a steady beat, and the child
-// speaks the syllables.
+// own word has no such recording: the frog hops in a steady beat, and the
+// child speaks the syllables.
 async function swing(word: Word, speak: boolean) {
   const box = document.getElementById("swing");
   if (!box) return;
@@ -291,7 +290,7 @@ export function runTip(word: Word, verdict: Verdict) {
   }
   if (tip === "gross" || tip === "klein") return;
   const help = verdict.spot?.help;
-  if (speak) say([help ? spoken(help) : word.text]);
+  if (speak) say(help ? [help.replaceAll("-", "")] : [word.text]);
 }
 
 // The right text after two wrong tries. The wrong letters stand out.

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { clipPath, swingPath } from "../src/rules/clips";
 import { dayOf } from "../src/rules/garden";
 
 interface Preload {
@@ -179,34 +180,6 @@ test("a word with a missing letter gets the swinging with a bow for each syllabl
   await expect(page.locator("#swing .frog")).toHaveClass(/\bon\b/);
 });
 
-test("the recorded voice says a word of the game and its sentence", async ({
-  page,
-}) => {
-  const word = page.waitForResponse(/audio\/de\/hund-\w+\.mp3$/);
-  const sentence = page.waitForResponse(
-    /audio\/de\/der-hund-bellt-laut-\w+\.mp3$/,
-  );
-  await pondWith(page, { sound: true });
-
-  expect((await word).ok()).toBe(true);
-  expect((await sentence).ok()).toBe(true);
-});
-
-test("the recorded voice swings a word of the game, and the frog hops along", async ({
-  page,
-}) => {
-  const sound = page.waitForResponse(/audio\/de\/to-ma-te-\w+\.mp3$/);
-  const starts = page.waitForResponse(/audio\/de\/to-ma-te-\w+\.json$/);
-  await pondWith(page, { own: ["To-ma-te"], sound: true });
-
-  await type(page, "Tomte");
-
-  expect((await sound).ok()).toBe(true);
-  expect(await (await starts).json()).toHaveLength(3);
-  // the frog reaches the last syllable
-  await expect(page.locator("#swing .bow").nth(2)).toHaveClass(/\bsung\b/);
-});
-
 test("a word to remember flashes, the keys wait, and then the child writes it", async ({
   page,
 }) => {
@@ -362,4 +335,67 @@ test("a round of ten words ends in the summary", async ({ page }) => {
   await expect(page.locator("#sumGarden")).toContainText(
     "1 von 1 Seerosen blühen.",
   );
+});
+
+// Counts what the voice of the browser reads.
+async function listen(page: Page) {
+  await page.addInitScript(() => {
+    const spoken: string[] = [];
+    (window as unknown as { spoken: string[] }).spoken = spoken;
+    window.speechSynthesis.speak = (u: SpeechSynthesisUtterance) => {
+      spoken.push(u.text);
+    };
+  });
+}
+
+const spoken = (page: Page) =>
+  page.evaluate(() => (window as unknown as { spoken: string[] }).spoken);
+
+test("the pond plays the recordings of a word and its sentence", async ({
+  page,
+}) => {
+  await listen(page);
+  const heard: string[] = [];
+  page.on("requestfinished", (request) => heard.push(request.url()));
+  await pondWith(page);
+
+  await page.locator("#cue").click();
+
+  for (const text of ["Hund", "Der Hund bellt laut."])
+    await expect
+      .poll(() => heard.some((url) => url.endsWith(clipPath("de", text))))
+      .toBe(true);
+  expect(await spoken(page)).toEqual([]);
+});
+
+test("the pond plays the recording of a word in syllables, and the frog hops along", async ({
+  page,
+}) => {
+  await listen(page);
+  const heard: string[] = [];
+  page.on("requestfinished", (request) => heard.push(request.url()));
+  await pondWith(page, { own: ["To-ma-te"], sound: true });
+
+  await type(page, "Tomte");
+
+  for (const ending of [".mp3", ".json"])
+    await expect
+      .poll(() =>
+        heard.some((url) => url.endsWith(swingPath("To-ma-te") + ending)),
+      )
+      .toBe(true);
+  // the frog reaches the last syllable
+  await expect(page.locator("#swing .bow").nth(2)).toHaveClass(/\bsung\b/);
+  expect(await spoken(page)).toEqual([]);
+});
+
+test("the voice of the browser reads an own word without a recording", async ({
+  page,
+}) => {
+  await listen(page);
+  await pondWith(page, { own: ["Spiel-platz"] });
+
+  await page.locator("#cue").click();
+
+  await expect.poll(() => spoken(page)).toEqual(["Spielplatz", "Spielplatz"]);
 });

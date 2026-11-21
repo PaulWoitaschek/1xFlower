@@ -6,6 +6,7 @@ interface Preload {
   own?: string[];
   onlyOwn?: boolean;
   strategies?: string[];
+  sound?: boolean;
 }
 
 // A profile in the pond that asks only the given own words (default: Hund).
@@ -13,7 +14,7 @@ async function pondWith(page: Page, preload: Preload = {}) {
   const store = {
     v: 2,
     mode: "pond",
-    sound: false,
+    sound: preload.sound ?? false,
     music: false,
     haptic: false,
     active: "a",
@@ -176,6 +177,34 @@ test("a word with a missing letter gets the swinging with a bow for each syllabl
   await expect(page.locator("#swing .bow").nth(1)).toHaveClass(/\bhere\b/);
   // the frog hops over the bows
   await expect(page.locator("#swing .frog")).toHaveClass(/\bon\b/);
+});
+
+test("the recorded voice says a word of the game and its sentence", async ({
+  page,
+}) => {
+  const word = page.waitForResponse(/audio\/de\/hund-\w+\.mp3$/);
+  const sentence = page.waitForResponse(
+    /audio\/de\/der-hund-bellt-laut-\w+\.mp3$/,
+  );
+  await pondWith(page, { sound: true });
+
+  expect((await word).ok()).toBe(true);
+  expect((await sentence).ok()).toBe(true);
+});
+
+test("the recorded voice swings a word of the game, and the frog hops along", async ({
+  page,
+}) => {
+  const sound = page.waitForResponse(/audio\/de\/to-ma-te-\w+\.mp3$/);
+  const starts = page.waitForResponse(/audio\/de\/to-ma-te-\w+\.json$/);
+  await pondWith(page, { own: ["To-ma-te"], sound: true });
+
+  await type(page, "Tomte");
+
+  expect((await sound).ok()).toBe(true);
+  expect(await (await starts).json()).toHaveLength(3);
+  // the frog reaches the last syllable
+  await expect(page.locator("#swing .bow").nth(2)).toHaveClass(/\bsung\b/);
 });
 
 test("a word to remember flashes, the keys wait, and then the child writes it", async ({

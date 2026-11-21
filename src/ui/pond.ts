@@ -1,4 +1,5 @@
 import { frogSVG, LILY_COLORS, lilyColor, lilySVG } from "../art/pond";
+import { spoken } from "../rules/clips";
 import {
   lilyStage,
   openLilies,
@@ -33,7 +34,7 @@ import {
 import { $, mk, reduce } from "./dom";
 import { flyDot } from "./garden";
 import { sfx } from "./sound";
-import { hush, say } from "./speech";
+import { hush, say, saySwing } from "./speech";
 import { garden, sess, store } from "./state";
 
 export const WATER = "#5DB7E8";
@@ -245,8 +246,10 @@ export function tipHtml(word: Word, verdict: Verdict): string {
   );
 }
 
-// The frog hops from syllable to syllable. The child speaks the syllables.
-function swing(word: Word) {
+// The frog hops from syllable to syllable, and the voice says each one. An
+// own word has no such sound: the frog hops in a steady beat, and the child
+// speaks the syllables.
+async function swing(word: Word, speak: boolean) {
   const box = document.getElementById("swing");
   if (!box) return;
   const bows = box.querySelectorAll<HTMLElement>(".bow");
@@ -264,14 +267,19 @@ function swing(word: Word) {
     bow.classList.add("sung");
     sfx("hop");
   };
-  word.syllables.forEach((_, i) => later(() => hop(i), i * 750));
+  const starts = speak ? await saySwing(word.syllables) : null;
+  // the child may be at the next word by now
+  if (!box.isConnected) return;
+  word.syllables.forEach((_, i) =>
+    later(() => hop(i), starts ? starts[i] * 1000 : i * 750),
+  );
 }
 
 // Shows and reads the tip. A word to remember shows for a moment.
 export function runTip(word: Word, verdict: Verdict) {
   const speak = store.sound;
   const tip = verdict.tip;
-  if (tip === "schwingen") return swing(word);
+  if (tip === "schwingen") return void swing(word, speak);
   if (tip === "merken") {
     sess.flash = true;
     later(() => {
@@ -283,7 +291,7 @@ export function runTip(word: Word, verdict: Verdict) {
   }
   if (tip === "gross" || tip === "klein") return;
   const help = verdict.spot?.help;
-  if (speak) say(help ? [help.replaceAll("-", "")] : [word.text]);
+  if (speak) say([help ? spoken(help) : word.text]);
 }
 
 // The right text after two wrong tries. The wrong letters stand out.

@@ -162,7 +162,8 @@ const SFX = {
   },
 };
 
-// All sounds and the music are synthesized, the game has no sound files.
+// All sounds and the music are synthesized. Only the voice has sound files,
+// see `speech.ts`.
 export function sfx(name: keyof typeof SFX) {
   const a = audio();
   if (!a) return;

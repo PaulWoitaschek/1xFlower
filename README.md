@@ -12,6 +12,8 @@ The orchard practices English words. Each word is a fruit tree. The first word l
 
 The star in the header opens the stars of the child. Each day with 10, 30 and 50 tasks brings a star, in all three games together, and the sheet shows the stars of the last two weeks, the days in a row and what blooms. Under "Für Eltern" the parents see the last seven days, the tasks of each day, what blooms over time, the rows of the multiplication and the division, and the tasks that go wrong most often. The game keeps each day in a diary from the first answer after this change, for about a year.
 
+Under "Profile bearbeiten", "Spielstand sichern" saves all profiles in a file, and "Spielstand laden" reads such a file on another device. A loaded profile replaces its own older copy on that device, and the other profiles stay. A new device offers the loading at once, beside the form for the first profile. The settings of the sound stay on each device.
+
 Play it at https://1xflower.woitaschek.de/.
 
 ## Development

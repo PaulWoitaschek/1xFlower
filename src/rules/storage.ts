@@ -86,3 +86,69 @@ export function activeGarden(store: Store, today = dayOf(Date.now())): Garden {
     today,
   );
 }
+
+/** the file that carries the profiles to another device */
+export interface Backup {
+  app: "einmaleins-garten";
+  v: 2;
+  profiles: Profile[];
+  data: Record<string, Garden>;
+}
+
+export function exportStore(store: Store): string {
+  const backup: Backup = {
+    app: "einmaleins-garten",
+    v: 2,
+    profiles: store.profiles,
+    data: store.data,
+  };
+  return JSON.stringify(backup);
+}
+
+function isProfile(p: unknown): p is Profile {
+  const q = p as Profile;
+  return (
+    !!q &&
+    typeof q.id === "string" &&
+    !!q.id &&
+    typeof q.name === "string" &&
+    typeof q.flower === "number"
+  );
+}
+
+/**
+ * Reads a backup into the store. A profile of the backup replaces the profile with the same id,
+ * so a garden can move back and forth between devices, and the other profiles stay.
+ * Returns the ids of the profiles that came, or null when the text is no backup.
+ */
+export function importStore(store: Store, text: string): string[] | null {
+  let backup: Backup;
+  try {
+    backup = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (
+    !backup ||
+    backup.app !== "einmaleins-garten" ||
+    !Array.isArray(backup.profiles) ||
+    !backup.data ||
+    typeof backup.data !== "object"
+  )
+    return null;
+  const profiles = backup.profiles.filter(
+    (p) =>
+      isProfile(p) &&
+      !!backup.data[p.id] &&
+      typeof backup.data[p.id].facts === "object",
+  );
+  if (!profiles.length) return null;
+  for (const p of profiles) {
+    const profile = { id: p.id, name: p.name.slice(0, 20), flower: p.flower };
+    const at = store.profiles.findIndex((q) => q.id === p.id);
+    if (at < 0) store.profiles.push(profile);
+    else store.profiles[at] = profile;
+    store.data[p.id] = upgrade(backup.data[p.id]);
+  }
+  return profiles.map((p) => p.id);
+}

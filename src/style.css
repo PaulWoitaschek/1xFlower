@@ -1583,6 +1583,16 @@ button:focus-visible {
 }
 .pfoot {
   justify-content: center;
+  flex-wrap: wrap;
+}
+.pmsg {
+  margin: 8px 0 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.pmsg.bad {
+  color: var(--berry);
 }
 canvas#fx {
   position: fixed;

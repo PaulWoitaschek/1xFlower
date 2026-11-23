@@ -4,6 +4,7 @@ import { thirstyKeys } from "../rules/thirst";
 import { $, mk } from "./dom";
 import { haptic } from "./haptics";
 import { sfx } from "./sound";
+import { exportStore, importStore } from "../rules/storage";
 import { activeProfile, save, setGarden, store } from "./state";
 
 const view = {
@@ -45,6 +46,7 @@ export function openProfiles() {
   view.flower = nextFlower();
   $<HTMLInputElement>("pNewName").value = "";
   $("pErr").hidden = true;
+  say(null);
   $("profiles").hidden = false;
   renderProfiles();
 }
@@ -131,6 +133,9 @@ function renderProfiles() {
   $("pEditBtn").hidden = view.adding || !store.profiles.length;
   $("pEditBtn").textContent = view.edit ? "Fertig" : "Profile bearbeiten";
   $("pClose").hidden = view.adding || view.edit || !activeProfile();
+  $("pExport").hidden = !view.edit;
+  // On a new device the sheet starts with the form, and a backup can bring the profiles.
+  $("pImport").hidden = !view.edit && !(view.adding && !store.profiles.length);
   if (view.adding) {
     const pick = $("pPick");
     pick.innerHTML = "";
@@ -171,6 +176,47 @@ function deleteProfile(id: string) {
   renderProfiles();
 }
 
+function say(text: string | null, bad = false) {
+  const msg = $("pMsg");
+  msg.hidden = !text;
+  msg.textContent = text || "";
+  msg.classList.toggle("bad", bad);
+}
+
+function exportFile() {
+  const blob = new Blob([exportStore(store)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download =
+    "einmaleins-garten-" + new Date().toISOString().slice(0, 10) + ".json";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  say("Der Spielstand ist gesichert.");
+}
+
+async function importFile(file: File) {
+  const ids = importStore(store, await file.text());
+  if (!ids) {
+    say("Diese Datei ist kein Spielstand.", true);
+    sfx("bad");
+    return;
+  }
+  if (!activeProfile()) activate(ids[0]);
+  else if (ids.includes(store.active!)) activate(store.active!);
+  else save();
+  view.adding = false;
+  view.edit = false;
+  view.confirm = null;
+  renderProfiles();
+  say(
+    ids.length === 1
+      ? "Ein Profil ist geladen."
+      : ids.length + " Profile sind geladen.",
+  );
+  sfx("bloom");
+  haptic("bloom");
+}
+
 // `onActivate` starts the game with the garden of a profile.
 export function initProfiles(onActivate: (id: string) => void) {
   activate = onActivate;
@@ -196,6 +242,7 @@ export function initProfiles(onActivate: (id: string) => void) {
     renderProfiles();
   };
   $("pNewBtn").onclick = () => {
+    say(null);
     view.adding = true;
     view.flower = nextFlower();
     nameInput.value = "";
@@ -204,10 +251,19 @@ export function initProfiles(onActivate: (id: string) => void) {
     nameInput.focus();
   };
   $("pEditBtn").onclick = () => {
+    say(null);
     view.edit = !view.edit;
     view.confirm = null;
     renderProfiles();
   };
   $("pClose").onclick = closeProfiles;
+  $("pExport").onclick = exportFile;
+  const fileInput = $<HTMLInputElement>("pFile");
+  $("pImport").onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (file) void importFile(file);
+  };
   $("whoBtn").onclick = openProfiles;
 }

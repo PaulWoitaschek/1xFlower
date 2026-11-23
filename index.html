@@ -361,7 +361,16 @@
             <button class="btn" type="button" id="pCancel">Abbrechen</button>
           </div>
         </form>
+        <p class="pmsg" id="pMsg" role="status" hidden></p>
         <div class="row pfoot">
+          <button class="btn" id="pExport">Spielstand sichern</button>
+          <button class="btn" id="pImport">Spielstand laden</button>
+          <input
+            type="file"
+            id="pFile"
+            accept=".json,application/json"
+            hidden
+          />
           <button class="btn" id="pNewBtn">+ Neues Profil</button>
           <button class="btn" id="pEditBtn">Profile bearbeiten</button>
           <button class="btn" id="pClose">Schließen</button>

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { gardenWith } from "./fixtures";
 import { freshGarden, type Fact, type Garden } from "./garden";
-import { activeGarden, loadStore, saveStore, type Store } from "./storage";
+import {
+  activeGarden,
+  exportStore,
+  importStore,
+  loadStore,
+  saveStore,
+  type Store,
+} from "./storage";
 
 const V2 = "einmaleins-garten-v2";
 const V1 = "einmaleins-garten-v1";
@@ -151,5 +158,67 @@ describe("activeGarden", () => {
     store.data.a = old;
     store.active = "a";
     expect(activeGarden(store).facts["7x8"].grown).toBe(0);
+  });
+});
+
+describe("exportStore and importStore", () => {
+  function storeWith(...names: string[]): Store {
+    const store = loadStore(disk());
+    names.forEach((name, i) => {
+      const id = name.toLowerCase();
+      store.profiles.push({ id, name, flower: i + 1 });
+      store.data[id] = gardenWith({ "7x8": i + 1 });
+    });
+    return store;
+  }
+
+  it("carries the profiles to another device", () => {
+    const from = storeWith("Lena", "Tom");
+    const to = loadStore(disk());
+    expect(importStore(to, exportStore(from))).toEqual(["lena", "tom"]);
+    expect(to.profiles).toEqual(from.profiles);
+    expect(to.data.lena.facts["7x8"].lvl).toBe(1);
+    expect(to.data.tom.facts["7x8"].lvl).toBe(2);
+  });
+
+  it("does not carry the settings of the device", () => {
+    const from = { ...storeWith("Lena"), sound: false, active: "lena" };
+    const to = loadStore(disk());
+    importStore(to, exportStore(from));
+    expect(to.sound).toBe(true);
+    expect(to.active).toBeNull();
+  });
+
+  it("replaces a profile with the same id and keeps the others", () => {
+    const from = storeWith("Lena");
+    from.data.lena = gardenWith({ "7x8": 5 });
+    from.profiles[0].name = "Lena B.";
+    const to = storeWith("Lena", "Tom");
+    importStore(to, exportStore(from));
+    expect(to.profiles.map((p) => p.name)).toEqual(["Lena B.", "Tom"]);
+    expect(to.data.lena.facts["7x8"].lvl).toBe(5);
+    expect(to.data.tom.facts["7x8"].lvl).toBe(2);
+  });
+
+  it("refuses a text that is no backup", () => {
+    const to = storeWith("Tom");
+    const before = structuredClone(to);
+    for (const text of [
+      "{broken",
+      "null",
+      '{"profiles":[],"data":{}}',
+      JSON.stringify(to),
+      exportStore(loadStore(disk())),
+    ])
+      expect(importStore(to, text)).toBeNull();
+    expect(to).toEqual(before);
+  });
+
+  it("skips a profile without a garden", () => {
+    const from = storeWith("Lena", "Tom");
+    delete from.data.tom;
+    const to = loadStore(disk());
+    expect(importStore(to, exportStore(from))).toEqual(["lena"]);
+    expect(to.profiles.map((p) => p.id)).toEqual(["lena"]);
   });
 });
